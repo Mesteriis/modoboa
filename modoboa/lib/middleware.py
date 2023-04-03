@@ -14,9 +14,8 @@ from modoboa.lib.web_utils import (
 class AjaxLoginRedirect(MiddlewareMixin):
 
     def process_response(self, request, response):
-        if request.is_ajax():
-            if isinstance(response, HttpResponseRedirect):
-                response.status_code = 278
+        if request.is_ajax() and isinstance(response, HttpResponseRedirect):
+            response.status_code = 278
         return response
 
 

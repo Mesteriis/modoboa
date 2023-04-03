@@ -2,10 +2,13 @@
 Fixtures factories.
 """
 
+
 import factory
 
 from modoboa.core.factories import PermissionFactory, UserFactory
 from . import models
+
+
 
 
 class DomainFactory(PermissionFactory):
@@ -16,11 +19,12 @@ class DomainFactory(PermissionFactory):
         model = models.Domain
         django_get_or_create = ("name", )
 
-    name = factory.Sequence(lambda n: "domain{}.test".format(n))
+    name = factory.Sequence(lambda n: f"domain{n}.test")
     type = "domain"  # NOQA:A003
     quota = 0
     default_mailbox_quota = 10
     enabled = True
+
 
 
 class DomainAliasFactory(PermissionFactory):

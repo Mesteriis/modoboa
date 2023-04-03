@@ -19,7 +19,7 @@ class ParametersAPITestCase(ModoAPITestCase):
         resp_full = self.client.get(url)
         self.assertEqual(resp_full.status_code, 200)
 
-        resp_core = self.client.get(url + "?app=core")
+        resp_core = self.client.get(f"{url}?app=core")
         self.assertEqual(resp_core.status_code, 200)
 
         self.assertNotEqual(len(resp_full.json()), len(resp_core.json()))

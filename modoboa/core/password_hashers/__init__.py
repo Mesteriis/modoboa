@@ -26,7 +26,7 @@ def get_password_hasher(scheme):
     """
     try:
         scheme = scheme.replace("-", "")
-        hasher = globals()["%sHasher" % scheme.upper()]
+        hasher = globals()[f"{scheme.upper()}Hasher"]
     except KeyError:
         hasher = PLAINHasher
     return hasher
@@ -42,9 +42,9 @@ def get_dovecot_schemes():
     :return: A list of supported '{SCHEME}'
     """
     schemes = getattr(settings, "DOVECOT_SUPPORTED_SCHEMES", None)
-    default_schemes = "MD5-CRYPT PLAIN"
-
     if not schemes:
+        default_schemes = "MD5-CRYPT PLAIN"
+
         try:
             retcode, schemes = doveadm_cmd("pw -l")
         except OSError:

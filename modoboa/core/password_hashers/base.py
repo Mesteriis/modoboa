@@ -27,7 +27,7 @@ class MetaHasher(type):
     @property
     def label(cls):
         """Returns the label of the hasher"""
-        return cls.name if not cls._weak else "{} (weak)".format(cls.name)
+        return f"{cls.name} (weak)" if cls._weak else cls.name
 
 
 class PasswordHasher(metaclass=MetaHasher):
@@ -48,9 +48,7 @@ class PasswordHasher(metaclass=MetaHasher):
         :param str pwhash: password hash
         :return: base64 encoded hash or original hash
         """
-        if self._target == "ldap":
-            return base64.b64encode(pwhash)
-        return pwhash
+        return base64.b64encode(pwhash) if self._target == "ldap" else pwhash
 
     def encrypt(self, clearvalue):
         """Encrypt a password.
@@ -66,7 +64,7 @@ class PasswordHasher(metaclass=MetaHasher):
         :return: encrypted password
         """
         pwhash = self._b64encode(self._encrypt(force_text(clearvalue)))
-        return "%s%s" % (self.scheme, force_text(pwhash))
+        return f"{self.scheme}{force_text(pwhash)}"
 
     def verify(self, clearvalue, hashed_value):
         """Verify a password against a hashed value.

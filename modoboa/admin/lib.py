@@ -109,12 +109,12 @@ def get_domains(user, domfilter=None, searchquery=None, **extrafilters):
         q = Q(name__contains=searchquery)
         q |= Q(domainalias__name__contains=searchquery)
         domains = domains.filter(q).distinct()
-    results = signals.extra_domain_qset_filters.send(
-        sender="get_domains", domfilter=domfilter, extrafilters=extrafilters)
-    if results:
+    if results := signals.extra_domain_qset_filters.send(
+        sender="get_domains", domfilter=domfilter, extrafilters=extrafilters
+    ):
         qset_filters = {}
         for result in results:
-            qset_filters.update(result[1])
+            qset_filters |= result[1]
         domains = domains.filter(**qset_filters)
     return domains
 
@@ -126,10 +126,14 @@ def check_if_domain_exists(name, dtypes):
     could conflict with a domain (domain alias, etc.)
 
     """
-    for dtype, label in dtypes:
-        if dtype.objects.filter(name=name).exists():
-            return label
-    return None
+    return next(
+        (
+            label
+            for dtype, label in dtypes
+            if dtype.objects.filter(name=name).exists()
+        ),
+        None,
+    )
 
 
 def import_domain(user, row, formopts):
@@ -179,8 +183,7 @@ def import_dlist(user, row, formopts):
 
 def get_dns_resolver():
     """Return a DNS resolver object."""
-    dns_server = param_tools.get_global_parameter("custom_dns_server")
-    if dns_server:
+    if dns_server := param_tools.get_global_parameter("custom_dns_server"):
         resolver = dns.resolver.Resolver()
         resolver.nameservers = [dns_server]
     else:
@@ -209,7 +212,7 @@ def get_dns_records(name, typ, resolver=None):
             _("DNS resolution timeout, unable to query %s at the moment") %
             name, exc_info=e)
     except dns.name.NameTooLong as e:
-        logger.error(_("DNS name is too long: %s" % name), exc_info=e)
+        logger.error(_(f"DNS name is too long: {name}"), exc_info=e)
     else:
         return dns_answers
     return None

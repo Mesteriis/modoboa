@@ -139,13 +139,11 @@ class OVHBackend(SMSBackend):
         """Send a new SMS to given recipients."""
         services = self.client.get("/sms")
         result = self.client.post(
-            "/sms/{}/jobs".format(services[0]),
+            f"/sms/{services[0]}/jobs",
             message=text,
             receivers=recipients,
             priority="high",
             noStopClause=True,
-            senderForResponse=True
+            senderForResponse=True,
         )
-        if result["totalCreditsRemoved"] != len(recipients):
-            return False
-        return True
+        return result["totalCreditsRemoved"] == len(recipients)

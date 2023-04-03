@@ -31,9 +31,7 @@ def clean_spaces(m):
 def clean_non_printable_char(m):
     """Strip non printable characters."""
     code = int(m.group(0)[1:], 16)
-    if code < 20:
-        return ""
-    return m.group(0)
+    return "" if code < 20 else m.group(0)
 
 
 def decode_mime(m):

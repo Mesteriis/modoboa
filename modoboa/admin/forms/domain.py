@@ -102,10 +102,13 @@ class DomainFormGeneral(forms.ModelForm, DynamicForm):
         domains_must_have_authorized_mx = (
             param_tools.get_global_parameter("domains_must_have_authorized_mx")
         )
-        if domains_must_have_authorized_mx and not self.user.is_superuser:
-            if not lib.domain_has_authorized_mx(name):
-                raise forms.ValidationError(
-                    _("No authorized MX record found for this domain"))
+        if (
+            domains_must_have_authorized_mx
+            and not self.user.is_superuser
+            and not lib.domain_has_authorized_mx(name)
+        ):
+            raise forms.ValidationError(
+                _("No authorized MX record found for this domain"))
 
         return name
 
@@ -114,11 +117,13 @@ class DomainFormGeneral(forms.ModelForm, DynamicForm):
         enabled = self.cleaned_data.get("enable_dkim")
         if not enabled:
             return enabled
-        storage_dir = param_tools.get_global_parameter("dkim_keys_storage_dir")
-        if not storage_dir:
+        if storage_dir := param_tools.get_global_parameter(
+            "dkim_keys_storage_dir"
+        ):
+            return enabled
+        else:
             raise forms.ValidationError(
                 _("DKIM keys storage directory not configured"))
-        return enabled
 
     def clean_quota(self):
         """Return proper quota value."""
@@ -159,10 +164,11 @@ class DomainFormGeneral(forms.ModelForm, DynamicForm):
                     "default_mailbox_quota"]
                 if default_mailbox_quota == 0:
                     self.add_error("default_mailbox_quota", msg)
-        if self.cleaned_data["enable_dkim"]:
-            if not self.cleaned_data.get("dkim_key_selector"):
-                self.add_error(
-                    "dkim_key_selector", _("This field is required."))
+        if self.cleaned_data["enable_dkim"] and not self.cleaned_data.get(
+            "dkim_key_selector"
+        ):
+            self.add_error(
+                "dkim_key_selector", _("This field is required."))
         self.aliases = []
         copied_data = cleaned_data.copy()
         for k in copied_data.keys():
@@ -304,8 +310,7 @@ class DomainFormOptions(forms.Form):
             return
         user = kwargs.pop("user")
         domain = kwargs.pop("domain")
-        username = "%s@%s" % (
-            self.cleaned_data["dom_admin_username"], domain.name)
+        username = f'{self.cleaned_data["dom_admin_username"]}@{domain.name}'
         try:
             da = User.objects.get(username=username)
         except User.DoesNotExist:
@@ -335,15 +340,14 @@ class DomainFormOptions(forms.Form):
                 override_rules=user.has_perm("admin.change_domain"))
             mb.save(creator=user)
 
-            condition = (
-                domain.type == "domain" and
-                self.cleaned_data["create_aliases"] and
-                dom_admin_username != "postmaster"
-            )
-            if condition:
+            if condition := (
+                domain.type == "domain"
+                and self.cleaned_data["create_aliases"]
+                and dom_admin_username != "postmaster"
+            ):
                 core_signals.can_create_object.send(
                     self.__class__, context=user, klass=Alias)
-                address = u"postmaster@{}".format(domain.name)
+                address = f"postmaster@{domain.name}"
                 alias = Alias.objects.create(
                     address=address, domain=domain, enabled=True)
                 alias.set_recipients([mb.full_address])
@@ -416,7 +420,7 @@ class DomainForm(TabForms):
         if isinstance(first_form, DomainFormGeneral):
             domain = first_form.save(
                 self.request.user, domalias_post_create=True)
-            options.update({"domain": domain})
+            options["domain"] = domain
         else:
             first_form.save(self.request.user)
         for f in self.forms[1:]:

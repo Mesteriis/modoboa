@@ -14,9 +14,9 @@ class HelpCommand(Command):
 
     def handle(self, parsed_args):
         if parsed_args.name not in self._commands:
-            print("Unknown command: %s" % parsed_args.name, file=sys.stderr)
+            print(f"Unknown command: {parsed_args.name}", file=sys.stderr)
             sys.exit(1)
         cmd = self._commands[parsed_args.name](self._commands)
-        cmd._parser.prog = "modoboa-admin.py %s" % parsed_args.name
+        cmd._parser.prog = f"modoboa-admin.py {parsed_args.name}"
         cmd._parser.description = cmd.help
         cmd._parser.print_help()

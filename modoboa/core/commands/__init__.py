@@ -26,7 +26,7 @@ class Command(object):
                         "django.template.backends.django.DjangoTemplates")
                 }]
             )
-        self._templates_dir = "%s/templates" % os.path.dirname(__file__)
+        self._templates_dir = f"{os.path.dirname(__file__)}/templates"
 
     def _render_template(self, tplfile, env):
         """Render an HTML template."""
@@ -71,7 +71,7 @@ def scan_for_commands(dirname=""):
         else:
             cmdclassname = cmdname.capitalize()
         try:
-            cmdclass = getattr(cmdmod, "%sCommand" % cmdclassname)
+            cmdclass = getattr(cmdmod, f"{cmdclassname}Command")
         except AttributeError:
             continue
         result[cmdname] = cmdclass
@@ -93,7 +93,7 @@ def handle_command_line():
     (args, remaining) = parser.parse_known_args()
 
     if args.command not in commands:
-        print("Unknown command '%s'" % args.command, file=sys.stderr)
+        print(f"Unknown command '{args.command}'", file=sys.stderr)
         sys.exit(1)
 
     commands[args.command](commands, verbose=args.verbose).run(remaining)

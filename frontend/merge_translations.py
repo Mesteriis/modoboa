@@ -53,8 +53,7 @@ def merge_translations():
             print(f"Opening {old_file}")
             old_po = polib.pofile(old_file)
             for entry in new_po:
-                old_entry = old_po.find(entry.msgid)
-                if old_entry:
+                if old_entry := old_po.find(entry.msgid):
                     entry.msgstr = old_entry.msgstr
         new_po.save()
 

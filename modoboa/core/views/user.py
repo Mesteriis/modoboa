@@ -73,27 +73,26 @@ def profile(request, tplname="core/user_profile.html"):
 
 @login_required
 def preferences(request):
-    if request.method == "POST":
-        forms = param_tools.registry.get_forms(
-            "user", request.POST, user=request.user)
-        for formdef in forms:
-            form = formdef["form"]
-            if form.is_valid():
-                form.save()
-                continue
-            return render_to_json_response({
-                "prefix": form.app, "form_errors": form.errors
-            }, status=400)
-        request.user.save()
-        return render_to_json_response(_("Preferences saved"))
-
-    return render_to_json_response({
-        "content": render_to_string("core/user_preferences.html", {
-            "forms": param_tools.registry.get_forms(
-                "user", user=request.user, first_app="general")
-        }, request),
-        "onload_cb": "preferencesCallback",
-    })
+    if request.method != "POST":
+        return render_to_json_response({
+            "content": render_to_string("core/user_preferences.html", {
+                "forms": param_tools.registry.get_forms(
+                    "user", user=request.user, first_app="general")
+            }, request),
+            "onload_cb": "preferencesCallback",
+        })
+    forms = param_tools.registry.get_forms(
+        "user", request.POST, user=request.user)
+    for formdef in forms:
+        form = formdef["form"]
+        if form.is_valid():
+            form.save()
+            continue
+        return render_to_json_response({
+            "prefix": form.app, "form_errors": form.errors
+        }, status=400)
+    request.user.save()
+    return render_to_json_response(_("Preferences saved"))
 
 
 @login_required
@@ -123,21 +122,18 @@ def security(request):
     """View to manage security settings."""
     context = {"user_has_device": django_otp.user_has_device(request.user)}
     if not request.user.tfa_enabled:
-        device = request.user.staticdevice_set.first()
-        if device:
+        if device := request.user.staticdevice_set.first():
             tokens = device.token_set.all().values_list("token", flat=True)
-            context.update({"tokens": tokens})
+            context["tokens"] = tokens
             # Set enable flag to True so we can't go here anymore
             request.user.tfa_enabled = True
             request.user.save()
-        else:
-            device = request.user.totpdevice_set.first()
-            if device:
-                factory = qrcode.image.svg.SvgPathImage
-                img = qrcode.make(device.config_url, image_factory=factory)
-                buf = io.BytesIO()
-                img.save(buf)
-                context.update({"qrcode": buf.getvalue().decode()})
+        elif device := request.user.totpdevice_set.first():
+            factory = qrcode.image.svg.SvgPathImage
+            img = qrcode.make(device.config_url, image_factory=factory)
+            buf = io.BytesIO()
+            img.save(buf)
+            context["qrcode"] = buf.getvalue().decode()
     resp = {
         "content": render_to_string(
             "core/user_security.html", context, request),

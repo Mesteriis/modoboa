@@ -1,5 +1,6 @@
 """Tests for core application."""
 
+
 import os
 import smtplib
 from unittest import mock, skipIf, skipUnless
@@ -19,7 +20,7 @@ from modoboa.core.password_hashers import (
 from modoboa.lib.tests import NO_SMTP, ModoTestCase
 from .. import factories, models
 
-DOVEADM_TEST_PATH = "{}/doveadm".format(os.path.dirname(__file__))
+DOVEADM_TEST_PATH = f"{os.path.dirname(__file__)}/doveadm"
 
 
 class AuthenticationTestCase(ModoTestCase):
@@ -77,14 +78,14 @@ class AuthenticationTestCase(ModoTestCase):
         data = {"username": "admin", "password": "password"}
 
         # 1. Check valid redirection
-        url = "{}?next=/admin/".format(reverse("core:login"))
+        url = f'{reverse("core:login")}?next=/admin/'
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.url.endswith(reverse("admin:index")))
         self.client.logout()
 
         # 2. Check bad redirection
-        url = "{}?next=http://www.evil.com".format(reverse("core:login"))
+        url = f'{reverse("core:login")}?next=http://www.evil.com'
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.url.endswith(reverse("core:dashboard")))

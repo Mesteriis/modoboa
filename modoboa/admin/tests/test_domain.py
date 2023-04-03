@@ -335,10 +335,10 @@ class DomainTestCase(ModoTestCase):
         self.assertIn("test.com", response["rows"])
 
         old_rows = response["rows"]
-        response = self.ajax_get("{}?sort_order=-name".format(url))
+        response = self.ajax_get(f"{url}?sort_order=-name")
         self.assertNotEqual(old_rows, response["rows"])
 
-        response = self.ajax_get("{}?sort_order=allocated_quota".format(url))
+        response = self.ajax_get(f"{url}?sort_order=allocated_quota")
         self.assertNotEqual(old_rows, response["rows"])
 
     def test_domain_logs_list_view(self):
@@ -355,10 +355,10 @@ class DomainTestCase(ModoTestCase):
         self.assertIn("ID1", response["rows"])
 
         old_rows = response["rows"]
-        response = self.ajax_get("{}?sort_order=-sender".format(url))
+        response = self.ajax_get(f"{url}?sort_order=-sender")
         self.assertNotEqual(old_rows, response["rows"])
 
-        response = self.ajax_get("{}?searchquery=ID1".format(url))
+        response = self.ajax_get(f"{url}?searchquery=ID1")
         self.assertNotEqual(old_rows, response["rows"])
 
         admin = User.objects.get(username="admin@test.com")
@@ -390,7 +390,7 @@ class DomainTestCase(ModoTestCase):
         response = self.ajax_get(url)
         self.assertIn("handle_mailboxes", response)
         self.assertIn("listalarms", response["rows"])
-        response = self.ajax_get("{}?objtype=quota".format(url))
+        response = self.ajax_get(f"{url}?objtype=quota")
         self.assertIn("progress-bar", response["rows"])
 
 
@@ -468,7 +468,7 @@ class DKIMTestCase(ModoTestCase):
             Alarm.objects.get(domain=domain,
                               internal_name=constants.DKIM_WRITE_ERROR).status,
             constants.ALARM_CLOSED)
-        key_path = os.path.join(self.workdir, "{}.pem".format(values["name"]))
+        key_path = os.path.join(self.workdir, f'{values["name"]}.pem')
         self.assertTrue(os.path.exists(key_path))
         domain = Domain.objects.get(name=values["name"])
         url = reverse("admin:domain_detail", args=[domain.pk])
@@ -486,7 +486,7 @@ class DKIMTestCase(ModoTestCase):
         }
         self.ajax_post(reverse("admin:domain_add"), values)
         call_command("modo", "manage_dkim_keys")
-        key_path = os.path.join(self.workdir, "{}.pem".format(values["name"]))
+        key_path = os.path.join(self.workdir, f'{values["name"]}.pem')
         self.assertTrue(os.path.exists(key_path))
         dom = Domain.objects.get(name="pouet.com")
         values["dkim_key_length"] = 4096

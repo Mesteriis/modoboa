@@ -16,9 +16,7 @@ from django.template.loader import render_to_string
 def _render_error(request, errortpl="error", user_context=None):
     if user_context is None:
         user_context = {}
-    return render(
-        request, "common/%s.html" % errortpl, user_context
-    )
+    return render(request, f"common/{errortpl}.html", user_context)
 
 
 def render_actions(actions):
@@ -29,10 +27,7 @@ def render_actions(actions):
 
 
 def getctx(status, level=1, callback=None, **kwargs):
-    if not callback:
-        callername = sys._getframe(level).f_code.co_name
-    else:
-        callername = callback
+    callername = callback or sys._getframe(level).f_code.co_name
     ctx = {"status": status, "callback": callername}
     for kw, v in list(kwargs.items()):
         ctx[kw] = v
@@ -57,9 +52,7 @@ def ajax_response(request, status="ok", respmsg=None,
     :param template: eventual template's path
     :param kwargs: dict used for template rendering
     """
-    ctx = {}
-    for k, v in list(kwargs.items()):
-        ctx[k] = v
+    ctx = dict(list(kwargs.items()))
     if template is not None:
         content = render_to_string(template, ctx, request)
     elif "content" in kwargs:
@@ -95,7 +88,7 @@ def static_url(path):
     """
     if path.startswith("/"):
         path = path[1:]
-    return "%s%s" % (settings.STATIC_URL, path)
+    return f"{settings.STATIC_URL}{path}"
 
 
 def size2integer(value, output_unit="B"):
@@ -113,25 +106,23 @@ def size2integer(value, output_unit="B"):
     """
     m = re.match(r"(\d+)\s*([a-zA-Z]+)", value)
     if m is None:
-        if re.match(r"\d+", value):
-            return int(value)
-        return 0
+        return int(value) if re.match(r"\d+", value) else 0
     if output_unit == "B":
-        if m.group(2)[0] in ["K", "k"]:
-            return int(m.group(1)) * 2 ** 10
-        if m.group(2)[0] in ["M", "m"]:
-            return int(m.group(1)) * 2 ** 20
-        if m.group(2)[0] in ["G", "g"]:
-            return int(m.group(1)) * 2 ** 30
+        if m[2][0] in ["K", "k"]:
+            return int(m[1]) * 2 ** 10
+        if m[2][0] in ["M", "m"]:
+            return int(m[1]) * 2 ** 20
+        if m[2][0] in ["G", "g"]:
+            return int(m[1]) * 2 ** 30
     elif output_unit == "MB":
-        if m.group(2)[0] in ["K", "k"]:
-            return int(int(m.group(1)) / 2 ** 10)
-        if m.group(2)[0] in ["M", "m"]:
-            return int(m.group(1))
-        if m.group(2)[0] in ["G", "g"]:
-            return int(m.group(1)) * 2 ** 10
+        if m[2][0] in ["K", "k"]:
+            return int(int(m[1]) / 2 ** 10)
+        if m[2][0] in ["M", "m"]:
+            return int(m[1])
+        if m[2][0] in ["G", "g"]:
+            return int(m[1]) * 2 ** 10
     else:
-        raise ValueError("Unsupported output unit {}".format(output_unit))
+        raise ValueError(f"Unsupported output unit {output_unit}")
     return 0
 
 

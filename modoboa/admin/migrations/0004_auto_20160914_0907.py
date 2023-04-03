@@ -3,6 +3,8 @@ from django.db import migrations, models
 import django.db.models.deletion
 
 
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -13,29 +15,74 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='DNSBLResult',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
                 ('provider', models.CharField(db_index=True, max_length=254)),
-                ('status', models.CharField(blank=True, db_index=True, max_length=45)),
-                ('domain', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='admin.Domain')),
+                (
+                    'status',
+                    models.CharField(blank=True, db_index=True, max_length=45),
+                ),
+                (
+                    'domain',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to='admin.Domain',
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='MXRecord',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
                 ('name', models.CharField(max_length=254)),
                 ('address', models.GenericIPAddressField()),
                 ('managed', models.BooleanField(default=False)),
                 ('updated', models.DateTimeField()),
-                ('domain', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='admin.Domain')),
+                (
+                    'domain',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to='admin.Domain',
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='SenderAddress',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
                 ('address', models.EmailField(max_length=254)),
-                ('mailbox', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='admin.Mailbox')),
+                (
+                    'mailbox',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to='admin.Mailbox',
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
@@ -51,14 +98,15 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='dnsblresult',
             name='mx',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='admin.MXRecord'),
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                to='admin.MXRecord',
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='senderaddress',
-            unique_together=set([('address', 'mailbox')]),
+            name='senderaddress', unique_together={('address', 'mailbox')}
         ),
         migrations.AlterUniqueTogether(
-            name='dnsblresult',
-            unique_together=set([('domain', 'provider', 'mx')]),
+            name='dnsblresult', unique_together={('domain', 'provider', 'mx')}
         ),
     ]

@@ -9,12 +9,11 @@ def create_quota_limits(apps, schema_editor):
         return
     ContentType = apps.get_model("contenttypes", "ContentType")
     UserObjectLimit = apps.get_model("limits", "UserObjectLimit")
-    to_create = []
     ct = ContentType.objects.get(app_label="admin", model="domain")
-    for u in User.objects.all():
-        to_create.append(
-            UserObjectLimit(user=u, name="quota", max_value=0, content_type=ct)
-        )
+    to_create = [
+        UserObjectLimit(user=u, name="quota", max_value=0, content_type=ct)
+        for u in User.objects.all()
+    ]
     UserObjectLimit.objects.bulk_create(to_create)
 
 

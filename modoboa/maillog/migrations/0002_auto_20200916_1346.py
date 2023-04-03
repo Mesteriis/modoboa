@@ -8,8 +8,7 @@ def rename_settings(apps, schema_editor):
     lc = LocalConfig.objects.first()
     if not lc:
         return
-    stats_params = lc._parameters.pop("modoboa_stats", None)
-    if stats_params:
+    if stats_params := lc._parameters.pop("modoboa_stats", None):
         lc._parameters["maillog"] = stats_params
         lc.save()
 
@@ -19,8 +18,7 @@ def backwards(apps, schema_editor):
     lc = LocalConfig.objects.first()
     if not lc:
         return
-    params = lc._parameters.pop("maillog", None)
-    if params:
+    if params := lc._parameters.pop("maillog", None):
         lc._parameters["modoboa_stats"] = params
         lc.save()
 

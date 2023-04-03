@@ -36,8 +36,8 @@ domainalias; domalias2.com; {domain}; True
         self.assertTrue(limit.is_exceeded())
 
         f = ContentFile(
-            "domainalias; domalias3.com; {}; True".format(self.domain),
-            name="domains.csv")
+            f"domainalias; domalias3.com; {self.domain}; True", name="domains.csv"
+        )
         response = self.client.post(
             reverse("admin:domain_import"), {
                 "sourcefile": f
@@ -49,13 +49,15 @@ domainalias; domalias2.com; {domain}; True
         """Check domain admins limit."""
         self.client.force_login(self.reseller)
         self.assertFalse(limit.is_exceeded())
-        content = ""
-        for cpt in range(initial_count, 2):
-            content += (
+        content = "".join(
+            (
                 "account; admin{cpt}@{domain}; toto; User; One; True; "
-                "DomainAdmins; user{cpt}@{domain}; 5; {domain}\n"
-                .format(domain=self.domain, cpt=cpt)
+                "DomainAdmins; user{cpt}@{domain}; 5; {domain}\n".format(
+                    domain=self.domain, cpt=cpt
+                )
             )
+            for cpt in range(initial_count, 2)
+        )
         f = ContentFile(content, name="domain_admins.csv")
         response = self.client.post(
             reverse("admin:identity_import"), {

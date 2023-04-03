@@ -97,10 +97,7 @@ class MaillogParser:
         :param month: the month of the current record beeing parsed
         :return: an integer
         """
-        month = (
-            time.strptime(month, "%b").tm_mon if not month.isdigit()
-            else int(month)
-        )
+        month = int(month) if month.isdigit() else time.strptime(month, "%b").tm_mon
         if self.curmonth == 1 and month != self.curmonth:
             return self.__year - 1
         return self.__year
@@ -165,11 +162,9 @@ class MaillogParser:
         """
         m = self._srs_regex["reverse_srs0"].match(mail_address)
         m = self._srs_regex["reverse_srs1"].match(mail_address) \
-            if m is None else m
+                if m is None else m
 
-        if m is not None:
-            return "%s@%s" % m.group(2, 1)
-        return mail_address
+        return "%s@%s" % m.group(2, 1) if m is not None else mail_address
 
     def new_domain_event(self, domain, name, size=None):
         """Take action about new event for domain."""
@@ -230,8 +225,7 @@ class MaillogParser:
             return False
         (msg_to, msg_status) = m.groups()
         if queue_id not in self.workdict:
-            self._dprint("[parser] inconsistent mail (%s: %s), skipping"
-                         % (queue_id, msg_to))
+            self._dprint(f"[parser] inconsistent mail ({queue_id}: {msg_to}), skipping")
             return True
 
         # orig_to is optional.
@@ -244,14 +238,11 @@ class MaillogParser:
             self.new_domain_event(
                 from_domain, "sent", self.workdict[queue_id]["size"])
 
-        # Handle local "to" domains.
-        to_domain = None
         condition = (
             msg_orig_to is not None and
             not self.is_srs_forward(msg_orig_to)
         )
-        if condition:
-            to_domain = split_mailbox(msg_orig_to)[1]
+        to_domain = split_mailbox(msg_orig_to)[1] if condition else None
         if to_domain is None:
             to_domain = split_mailbox(msg_to)[1]
 
@@ -280,7 +271,7 @@ class MaillogParser:
         host, prog, subprog, pid, log = m.groups()
 
         try:
-            parser = getattr(self, "_parse_{}".format(prog))
+            parser = getattr(self, f"_parse_{prog}")
             if not parser(log, host, pid, subprog):
                 self._dprint("[parser] ignoring %r log: %r" % (prog, log))
         except AttributeError:
@@ -292,7 +283,7 @@ class MaillogParser:
         try:
             fp = io.open(logfile, encoding="utf-8")
         except IOError as errno:
-            self._dprint("%s" % errno)
+            self._dprint(f"{errno}")
             return
 
         for line in fp.readlines():

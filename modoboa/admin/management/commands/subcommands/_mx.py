@@ -27,9 +27,11 @@ class CheckMXRecords(BaseCommand):
     @cached_property
     def providers(self):
         """Return a list of DNSBL providers."""
-        if not hasattr(settings, "DNSBL_PROVIDERS"):
-            return constants.DNSBL_PROVIDERS
-        return settings.DNSBL_PROVIDERS
+        return (
+            settings.DNSBL_PROVIDERS
+            if hasattr(settings, "DNSBL_PROVIDERS")
+            else constants.DNSBL_PROVIDERS
+        )
 
     @cached_property
     def sender(self):
@@ -76,7 +78,7 @@ class CheckMXRecords(BaseCommand):
             else:
                 delim = "." if ip.version == 4 else ":"
                 reverse = delim.join(ip.exploded.split(delim)[::-1])
-            pattern = "{}.{}.".format(reverse, provider)
+            pattern = f"{reverse}.{provider}."
             try:
                 result = socket.gethostbyname(pattern)
                 #result from dnsbl is in ipv4 format
@@ -116,7 +118,7 @@ class CheckMXRecords(BaseCommand):
                 dnsbl_result.save()
                 if not dnsbl_result.status and result:
                     trigger = True
-            alarm_name = "domain_mx_in_dnsbl_{}".format(provider)
+            alarm_name = f"domain_mx_in_dnsbl_{provider}"
             if trigger:
                 title = _("MX {} listed by DNSBL provider {}").format(
                     mx.name, provider)
@@ -159,25 +161,13 @@ class CheckMXRecords(BaseCommand):
         """
         alerts = []
         check = False
-        mxs = [(mx, ipaddress.ip_address("%s" % mx.address))
-               for mx in mx_list]
-        valid_mxs = self.valid_mxs
-        if not mxs:
-            alarm, created = domain.alarms.get_or_create(
-                internal_name="domain_has_no_mx",
-                status=constants.ALARM_OPENED,
-                defaults={"title": _("Domain has no MX record")}
-            )
-            if created:
-                alerts.append(
-                    _("Domain {} has no MX record").format(domain.name))
-        else:
+        if mxs := [(mx, ipaddress.ip_address(f"{mx.address}")) for mx in mx_list]:
             # Close opened alarm
             domain.alarms.filter(
                 internal_name="domain_has_no_mx",
                 status=constants.ALARM_OPENED).update(
                     status=constants.ALARM_CLOSED, closed=timezone.now())
-            if valid_mxs:
+            if valid_mxs := self.valid_mxs:
                 for subnet in valid_mxs:
                     for mx, addr in mxs:
                         if addr in subnet:
@@ -208,6 +198,15 @@ class CheckMXRecords(BaseCommand):
                         status=constants.ALARM_CLOSED,
                         closed=timezone.now()
                     )
+        else:
+            alarm, created = domain.alarms.get_or_create(
+                internal_name="domain_has_no_mx",
+                status=constants.ALARM_OPENED,
+                defaults={"title": _("Domain has no MX record")}
+            )
+            if created:
+                alerts.append(
+                    _("Domain {} has no MX record").format(domain.name))
         if not alerts:
             return
         subject = _("[modoboa] MX issue(s) for domain {}").format(

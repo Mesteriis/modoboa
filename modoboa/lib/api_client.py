@@ -36,9 +36,7 @@ class ModoAPIClient(object):
                 _("Failed to communicate with public API: %s"), str(err)
             )
             return None
-        if resp.status_code != 200:
-            return None
-        return resp.json()
+        return None if resp.status_code != 200 else resp.json()
 
     @property
     def local_core_version(self):
@@ -58,11 +56,10 @@ class ModoAPIClient(object):
 
     def register_instance(self, hostname):
         """Register this instance."""
-        url = "{}instances/search/?hostname={}".format(
-            self._api_url, hostname)
+        url = f"{self._api_url}instances/search/?hostname={hostname}"
         instance = self.__send_request(url)
         if instance is None:
-            url = "{}instances/".format(self._api_url)
+            url = f"{self._api_url}instances/"
             data = {
                 "hostname": hostname, "known_version": self.local_core_version}
             try:
@@ -79,7 +76,7 @@ class ModoAPIClient(object):
 
     def update_instance(self, pk, data):
         """Update instance and send stats."""
-        url = "{}instances/{}/".format(self._api_url, pk)
+        url = f"{self._api_url}instances/{pk}/"
         try:
             response = requests.put(url, data=data)
         except RequestException as err:
@@ -94,5 +91,5 @@ class ModoAPIClient(object):
 
     def versions(self):
         """Fetch core and extension versions."""
-        url = "{}versions/".format(self._api_url)
+        url = f"{self._api_url}versions/"
         return self.__send_request(url)

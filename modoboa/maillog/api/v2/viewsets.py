@@ -31,7 +31,7 @@ class StatisticsViewSet(GetThrottleViewsetMixin,viewsets.ViewSet):
         graph_sets = {}
         for result in signals.get_graph_sets.send(
                 sender="index", user=request.user):
-            graph_sets.update(result[1])
+            graph_sets |= result[1]
         gset = serializer.validated_data["gset"]
         fname = graph_sets[gset].get_file_name(
             request.user, serializer.validated_data.get("searchquery"))
@@ -45,7 +45,7 @@ class StatisticsViewSet(GetThrottleViewsetMixin,viewsets.ViewSet):
             )
         else:
             end = int(time.mktime(time.localtime()))
-            start = "-1{}".format(period)
+            start = f"-1{period}"
         graphs = graph_sets[gset].export(
             fname, start, end, serializer.validated_data.get("graphic")
         )

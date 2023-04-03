@@ -9,7 +9,7 @@ class StatisticsViewSetTestCase(ModoAPITestCase):
 
     def test_list(self):
         url = reverse("v2:statistics-list")
-        resp = self.client.get(url + "?gset=mailtraffic&period=day")
+        resp = self.client.get(f"{url}?gset=mailtraffic&period=day")
         self.assertEqual(resp.status_code, 200)
 
         resp = self.client.get(

@@ -116,9 +116,7 @@ class AliasDetailView(
     def has_permission(self):
         """Check object-level access."""
         result = super(AliasDetailView, self).has_permission()
-        if not result:
-            return result
-        return self.request.user.can_access(self.get_object())
+        return self.request.user.can_access(self.get_object()) if result else result
 
     def get_context_data(self, **kwargs):
         """Add information to context."""

@@ -8,6 +8,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
+
 from logging.handlers import SysLogHandler
 import os
 
@@ -231,7 +232,7 @@ PID_FILE_STORAGE_PATH = '/tmp'
 REDIS_HOST = 'localhost'
 REDIS_PORT = os.environ.get('REDIS_PORT', 6379)
 REDIS_QUOTA_DB = 0
-REDIS_URL = 'redis://{}:{}/{}'.format(REDIS_HOST, REDIS_PORT, REDIS_QUOTA_DB)
+REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_QUOTA_DB}'
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators

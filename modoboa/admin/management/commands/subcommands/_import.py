@@ -46,9 +46,7 @@ class ImportCommand(BaseCommand):
         if not os.path.isfile(filename):
             raise CommandError("File not found")
 
-        num_lines = sum(
-            1 for line in io.open(filename, encoding=encoding) if line
-        )
+        num_lines = sum(bool(line) for line in io.open(filename, encoding=encoding))
         pbar = progressbar.ProgressBar(
             widgets=[
                 progressbar.Percentage(), progressbar.Bar(), progressbar.ETA()
@@ -72,8 +70,8 @@ class ImportCommand(BaseCommand):
                     if options["continue_if_exists"]:
                         continue
                     raise CommandError(
-                        "Object already exists: {}".format(
-                            options["sepchar"].join(row[:2])))
+                        f'Object already exists: {options["sepchar"].join(row[:2])}'
+                    )
                 i += 1
                 pbar.update(i)
 

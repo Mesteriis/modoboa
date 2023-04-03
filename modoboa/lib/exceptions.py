@@ -64,5 +64,5 @@ class PermDeniedException(ModoboaException):
 
     def __str__(self):
         if self.msg:
-            return _("Permission denied: %s" % self.msg)
+            return _(f"Permission denied: {self.msg}")
         return _("Permission denied")

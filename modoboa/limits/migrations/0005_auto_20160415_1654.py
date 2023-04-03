@@ -9,9 +9,10 @@ def create_limits(apps, schema_editor):
     DomainObjectLimit = apps.get_model("limits", "DomainObjectLimit")
     to_create = []
     for domain in Domain.objects.all():
-        for name, tpl in utils.get_domain_limit_templates():
-            to_create.append(
-                DomainObjectLimit(domain=domain, name=name, max_value=-1))
+        to_create.extend(
+            DomainObjectLimit(domain=domain, name=name, max_value=-1)
+            for name, tpl in utils.get_domain_limit_templates()
+        )
     DomainObjectLimit.objects.bulk_create(to_create)
 
 

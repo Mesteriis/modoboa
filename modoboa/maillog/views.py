@@ -28,14 +28,16 @@ def index(request):
     FIXME: how to select a default graph set ?
     """
     deflocation = "graphs/?gset=mailtraffic"
-    if not request.user.is_superuser:
-        if not Domain.objects.get_for_admin(request.user).count():
-            raise NotFound(_("No statistics available"))
+    if (
+        not request.user.is_superuser
+        and not Domain.objects.get_for_admin(request.user).count()
+    ):
+        raise NotFound(_("No statistics available"))
 
     graph_sets = {}
     for result in signals.get_graph_sets.send(
             sender="index", user=request.user):
-        graph_sets.update(result[1])
+        graph_sets |= result[1]
     periods = [
         {"name": "day", "label": _("Day")},
         {"name": "week", "label": _("Week")},
@@ -59,7 +61,7 @@ def graphs(request):
     graph_sets = {}
     for result in signals.get_graph_sets.send(
             sender="index", user=request.user):
-        graph_sets.update(result[1])
+        graph_sets |= result[1]
     if gset not in graph_sets:
         raise NotFound(_("Unknown graphic set"))
     period = request.GET.get("period", "day")
@@ -75,12 +77,12 @@ def graphs(request):
         start = request.GET["start"]
         end = request.GET["end"]
         expr = re.compile(r'[:\- ]')
-        period_name = "%s_%s" % (expr.sub('', start), expr.sub('', end))
+        period_name = f"{expr.sub('', start)}_{expr.sub('', end)}"
         start = date_to_timestamp(expr.split(start))
         end = date_to_timestamp(expr.split(end))
     else:
         end = int(time.mktime(time.localtime()))
-        start = "-1%s" % period
+        start = f"-1{period}"
         period_name = period
 
     tplvars["domain_selector"] = graph_sets[gset].domain_selector

@@ -24,10 +24,11 @@ def enabled_applications():
     from modoboa.core.extensions import exts_pool
 
     result = [("user", _("User profile"))]
-    for extension in exts_pool.list_all():
-        if "topredirection_url" not in extension:
-            continue
-        result.append((extension["name"], extension["label"]))
+    result.extend(
+        (extension["name"], extension["label"])
+        for extension in exts_pool.list_all()
+        if "topredirection_url" in extension
+    )
     return sorted(result, key=lambda e: e[0])
 
 
@@ -599,10 +600,8 @@ class GeneralParametersForm(param_forms.AdminParametersForm):
         cleaned_data = self.cleaned_data
 
         if cleaned_data["sms_password_recovery"]:
-            provider = cleaned_data.get("sms_provider")
-            if provider:
-                sms_settings = sms_backends.get_backend_settings(provider)
-                if sms_settings:
+            if provider := cleaned_data.get("sms_provider"):
+                if sms_settings := sms_backends.get_backend_settings(provider):
                     for name in sms_settings.keys():
                         if not cleaned_data.get(name):
                             self.add_error(name, _("This field is required"))
@@ -637,10 +636,7 @@ class GeneralParametersForm(param_forms.AdminParametersForm):
                 "last_name": "sn"
             })
         ldap_uri = "ldaps://" if values["ldap_secured"] == "ssl" else "ldap://"
-        ldap_uri += "%s:%s" % (
-            values[backend.srv_address_setting_name],
-            values[backend.srv_port_setting_name]
-        )
+        ldap_uri += f"{values[backend.srv_address_setting_name]}:{values[backend.srv_port_setting_name]}"
         setattr(settings, backend.setting_fullname("SERVER_URI"), ldap_uri)
         if values["ldap_secured"] == "starttls":
             setattr(settings, backend.setting_fullname("START_TLS"), True)

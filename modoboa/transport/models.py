@@ -28,9 +28,7 @@ class Transport(models.Model):
     @property
     def backend(self):
         """Shortcut to access backend."""
-        if not self.service:
-            return None
-        return backends.manager.get_backend(self.service)
+        return backends.manager.get_backend(self.service) if self.service else None
 
 
 reversion.register(Transport)

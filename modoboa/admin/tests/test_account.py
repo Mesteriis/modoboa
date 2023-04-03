@@ -71,11 +71,12 @@ class AccountTestCase(ModoTestCase):
                 alias__internal=True).exists()
         )
 
-        values.update({
-            "username": "pouet@test.com", "language": "en",
+        values |= {
+            "username": "pouet@test.com",
+            "language": "en",
             "secondary_email": "homer@simpson.com",
-            "phone_number": "+33612345678"
-        })
+            "phone_number": "+33612345678",
+        }
         self.ajax_post(
             reverse("admin:account_change", args=[account.id]), values
         )
@@ -229,11 +230,11 @@ class AccountTestCase(ModoTestCase):
             ).exists()
         )
         # Now rename while option set to True -> alias created
-        values.update({
+        values |= {
             "username": "user@test.com",
             "email": "user@test.com",
-            "create_alias_with_old_address": True}
-        )
+            "create_alias_with_old_address": True,
+        }
         self.ajax_post(url, values)
         self.assertTrue(
             models.AliasRecipient.objects.filter(
@@ -242,10 +243,10 @@ class AccountTestCase(ModoTestCase):
             ).exists()
         )
         # Change domain while option set to True -> alias created
-        values.update({
+        values |= {
             "username": "new_user@test2.com",
             "email": "new_user@test2.com",
-        })
+        }
         self.ajax_post(url, values)
         self.assertTrue(
             models.AliasRecipient.objects.filter(
@@ -386,8 +387,7 @@ class AccountTestCase(ModoTestCase):
         }
         self.ajax_post(reverse("admin:account_add"), values, status=400)
 
-        values.update({"username": "fakeuser@test.com",
-                       "email": "fakeuser@test.com"})
+        values |= {"username": "fakeuser@test.com", "email": "fakeuser@test.com"}
         self.ajax_post(reverse("admin:account_add"), values)
         account = User.objects.get(username="fakeuser@test.com")
         values = {
@@ -502,17 +502,14 @@ class AccountTestCase(ModoTestCase):
         self.assertIn("user@test.com", response["rows"])
         old_rows = response["rows"]
 
-        response = self.ajax_get(
-            "{}?sort_order=-quota_value__bytes".format(url))
+        response = self.ajax_get(f"{url}?sort_order=-quota_value__bytes")
         self.assertNotEqual(old_rows, response["rows"])
         old_rows = response["rows"]
 
-        response = self.ajax_get(
-            "{}?sort_order=-quota_usage".format(url))
+        response = self.ajax_get(f"{url}?sort_order=-quota_usage")
         self.assertEqual(old_rows, response["rows"])
 
-        response = self.ajax_get(
-            "{}?sort_order=-unknown".format(url), status=400)
+        response = self.ajax_get(f"{url}?sort_order=-unknown", status=400)
 
 
 @skipIf(NO_LDAP, "No ldap module installed")
@@ -539,12 +536,13 @@ class LDAPAccountTestCase(test_ldap.LDAPTestCaseMixin, ModoTestCase):
 class PermissionsTestCase(ModoTestCase):
 
     @classmethod
-    def setUpTestData(cls):  # NOQA:N802
+    def setUpTestData(cls):    # NOQA:N802
         """Create test data."""
         super(PermissionsTestCase, cls).setUpTestData()
-        parameters = {}
-        for name, _definition in limits_utils.get_user_limit_templates():
-            parameters["deflt_user_{0}_limit".format(name)] = 2
+        parameters = {
+            "deflt_user_{0}_limit".format(name): 2
+            for name, _definition in limits_utils.get_user_limit_templates()
+        }
         cls.localconfig.parameters.set_values(parameters, app="limits")
         cls.localconfig.save()
         factories.populate_database()

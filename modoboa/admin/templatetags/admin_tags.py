@@ -32,16 +32,15 @@ def domains_menu(selection, user, ajax_mode=True):
     :rtype: str
     :return: rendered menu (as HTML)
     """
-    nav_classes = "navigation"
     if ajax_mode:
         domain_list_url = "list/"
         quota_list_url = "quotas/"
         logs_url = "logs/"
-        nav_classes += " ajaxnav"
+        nav_classes = "navigation" + " ajaxnav"
     else:
         domain_list_url = reverse("admin:domain_list")
-        quota_list_url = domain_list_url + "#quotas/"
-        logs_url = domain_list_url + "#logs/"
+        quota_list_url = f"{domain_list_url}#quotas/"
+        logs_url = f"{domain_list_url}#logs/"
     entries = [
         {"name": "domains",
          "label": _("List domains"),
@@ -101,7 +100,7 @@ def identities_menu(user, selection=None, ajax_mode=True):
         nav_classes += " ajaxnav"
     else:
         identity_list_url = reverse("admin:identity_list")
-        quota_list_url = identity_list_url + "#quotas/"
+        quota_list_url = f"{identity_list_url}#quotas/"
     entries = [
         {"name": "identities",
          "label": _("List identities"),
@@ -203,17 +202,20 @@ def identity_actions(user, ident):
         ]
     else:
         actions = [
-            {"name": "changealias",
-             "url": reverse("admin:alias_change", args=[objid]),
-             "img": "fa fa-edit",
-             "modal": True,
-             "modalcb": "admin.aliasform_cb",
-             "title": _("Edit {}").format(ident)},
-            {"name": "delalias",
-             "url": "{}?selection={}".format(
-                 reverse("admin:alias_delete"), objid),
-             "img": "fa fa-trash",
-             "title": _("Delete %s?") % ident.address},
+            {
+                "name": "changealias",
+                "url": reverse("admin:alias_change", args=[objid]),
+                "img": "fa fa-edit",
+                "modal": True,
+                "modalcb": "admin.aliasform_cb",
+                "title": _("Edit {}").format(ident),
+            },
+            {
+                "name": "delalias",
+                "url": f'{reverse("admin:alias_delete")}?selection={objid}',
+                "img": "fa fa-trash",
+                "title": _("Delete %s?") % ident.address,
+            },
         ]
     return render_actions(actions)
 
@@ -241,9 +243,7 @@ def domain_aliases(domain):
     """
     if not domain.aliases.count():
         return "---"
-    res = ""
-    for alias in domain.aliases.all():
-        res += "%s<br/>" % alias.name
+    res = "".join(f"{alias.name}<br/>" for alias in domain.aliases.all())
     return mark_safe(res)
 
 
@@ -261,7 +261,7 @@ def identity_modify_link(identity, active_tab="default"):
     linkdef = {"label": identity.identity, "modal": True}
     if identity.__class__.__name__ == "User":
         linkdef["url"] = reverse("admin:account_change", args=[identity.id])
-        linkdef["url"] += "?active_tab=%s" % active_tab
+        linkdef["url"] += f"?active_tab={active_tab}"
         linkdef["modalcb"] = "admin.editaccount_cb"
     else:
         linkdef["url"] = reverse("admin:alias_change", args=[identity.id])

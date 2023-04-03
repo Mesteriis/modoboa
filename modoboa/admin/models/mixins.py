@@ -22,6 +22,8 @@ class MessageLimitMixin:
     @property
     def sent_messages_in_percent(self):
         """Return number of sent messages as a percentage."""
-        if not self.message_limit:
-            return None
-        return int(self.sent_messages / float(self.message_limit) * 100)
+        return (
+            int(self.sent_messages / float(self.message_limit) * 100)
+            if self.message_limit
+            else None
+        )

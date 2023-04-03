@@ -21,9 +21,7 @@ class RelayTransportBackend(backends.TransportBackend):
 
     def serialize(self, transport):
         """Make sure next_hop is set."""
-        transport.next_hop = "[{}]:{}".format(
-            transport._settings["relay_target_host"],
-            transport._settings["relay_target_port"])
+        transport.next_hop = f'[{transport._settings["relay_target_host"]}]:{transport._settings["relay_target_port"]}'
 
 
 backends.manager.register_backend(RelayTransportBackend)

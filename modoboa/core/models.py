@@ -120,13 +120,13 @@ class User(AbstractUser):
         ldap_sync_enable = param_tools.get_global_parameter("ldap_enable_sync")
         if self.is_local or ldap_sync_enable:
             self.password = self._crypt_password(raw_value)
-        else:
-            if not ldap_available:
-                raise InternalError(
-                    _("Failed to update password: LDAP module not installed")
-                )
+        elif ldap_available:
             LDAPAuthBackend().update_user_password(
                 self.username, curvalue, raw_value
+            )
+        else:
+            raise InternalError(
+                _("Failed to update password: LDAP module not installed")
             )
         signals.account_password_updated.send(
             sender=self.__class__,
@@ -162,9 +162,7 @@ class User(AbstractUser):
 
     @property
     def fullname(self):
-        result = self.username
-        if self.first_name != "":
-            result = self.first_name
+        result = self.first_name if self.first_name != "" else self.username
         if self.last_name != "":
             if result != "":
                 result += " "
@@ -178,7 +176,7 @@ class User(AbstractUser):
     @property
     def name_or_rcpt(self):
         if self.first_name != "":
-            return "%s %s" % (self.first_name, self.last_name)
+            return f"{self.first_name} {self.last_name}"
         return "----"
 
     @property
@@ -188,8 +186,7 @@ class User(AbstractUser):
     @property
     def encoded_address(self):
         if self.first_name != "" or self.last_name != "":
-            return '"{}" <{}>'.format(
-                Header(self.fullname, "utf8").encode(), self.email)
+            return f'"{Header(self.fullname, "utf8").encode()}" <{self.email}>'
         return self.email
 
     def is_owner(self, obj):
@@ -233,10 +230,7 @@ class User(AbstractUser):
 
         ct = ContentType.objects.get_for_model(self)
         qs = self.objectaccess_set.filter(content_type=ct)
-        for ooentry in qs.all():
-            if ooentry.content_object.is_owner(obj):
-                return True
-        return False
+        return any(ooentry.content_object.is_owner(obj) for ooentry in qs.all())
 
     @property
     def role(self):
@@ -340,13 +334,15 @@ class User(AbstractUser):
         if desired_role == "SimpleUsers":
             if len(row) < 8 or not row[7].strip():
                 raise BadRequest(
-                    _("The simple user '%s' must have a valid email address"
-                      % self.username)
+                    _(
+                        f"The simple user '{self.username}' must have a valid email address"
+                    )
                 )
             if self.username != row[7].strip():
                 raise BadRequest(
-                    _("username and email fields must not differ for '%s'"
-                      % self.username)
+                    _(
+                        f"username and email fields must not differ for '{self.username}'"
+                    )
                 )
 
         if crypt_password:
@@ -428,9 +424,7 @@ class ObjectAccess(models.Model):
         unique_together = (("user", "content_type", "object_id"),)
 
     def __str__(self):
-        return "%s => %s (%s)" % (
-            self.user, self.content_object, self.content_type
-        )
+        return f"{self.user} => {self.content_object} ({self.content_type})"
 
 
 class Log(models.Model):
@@ -472,4 +466,4 @@ class ExtensionUpdateHistory(models.Model):
         unique_together = [("extension", "version")]
 
     def __str__(self):
-        return "{}: {}".format(self.extension, self.name)
+        return f"{self.extension}: {self.name}"

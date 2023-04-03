@@ -25,12 +25,14 @@ class TransportSerializer(serializers.ModelSerializer):
                 "service": _("Unsupported service")
             })
         data["_settings"] = json.loads(data["_settings"])
-        errors = self.backend.clean_fields(data["_settings"])
-        if errors:
-            raise serializers.ValidationError({
-                "_settings": ",".join(
-                    ["{}: {}".format(error[0], error[1]) for error in errors])
-            })
+        if errors := self.backend.clean_fields(data["_settings"]):
+            raise serializers.ValidationError(
+                {
+                    "_settings": ",".join(
+                        [f"{error[0]}: {error[1]}" for error in errors]
+                    )
+                }
+            )
         return data
 
 

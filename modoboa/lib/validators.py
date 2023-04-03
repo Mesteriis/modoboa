@@ -36,6 +36,8 @@ class HostnameValidator(object):
 validate_hostname = HostnameValidator()
 
 
+
+
 class UTF8EmailValidator(EmailValidator):
 
     """Validator for addresses using non-ASCII characters."""
@@ -44,16 +46,18 @@ class UTF8EmailValidator(EmailValidator):
     ul = "\u00a1-\uffff"
     ascii_set = "-!#$%&'*+/=?^_`{}|~0-9A-Z"
     user_regex_raw = (
-        # dot-atom
-        r"^[" + ascii_set + ul + r"]+(\.[" + ascii_set + ul + r"]+)*\Z"
+        f"^[{ascii_set}{ul}" + r"]+(\.[" + ascii_set + ul + r"]+)*\Z"
         # quoted-string
         r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|'
         r'\\[\001-\011\013\014\016-\177])*"\Z)'
     )
-    user_regex = re.compile(r"(" + user_regex_raw, re.IGNORECASE)
+    user_regex = re.compile(f"({user_regex_raw}", re.IGNORECASE)
+
 
 
 validate_utf8_email = UTF8EmailValidator()
+
+
 
 
 class UTF8AndEmptyUserEmailValidator(UTF8EmailValidator):
@@ -61,7 +65,9 @@ class UTF8AndEmptyUserEmailValidator(UTF8EmailValidator):
     """Same as upper + allows empty local part."""
 
     user_regex = re.compile(
-        r"(^$|" + UTF8EmailValidator.user_regex_raw, re.IGNORECASE)
+        f"(^$|{UTF8EmailValidator.user_regex_raw}", re.IGNORECASE
+    )
+
 
 
 validate_utf8_and_empty_user_email = UTF8AndEmptyUserEmailValidator()

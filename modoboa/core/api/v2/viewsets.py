@@ -81,10 +81,7 @@ class AccountViewSet(core_v1_viewsets.AccountViewSet):
             if created:
                 status = 201
         else:
-            if hasattr(request.user, "auth_token"):
-                token = request.user.auth_token
-            else:
-                token = ""
+            token = request.user.auth_token if hasattr(request.user, "auth_token") else ""
         serializer = serializers.UserAPITokenSerializer({"token": str(token)})
         return response.Response(serializer.data, status=status)
 
@@ -127,11 +124,10 @@ class AccountViewSet(core_v1_viewsets.AccountViewSet):
         serializer.is_valid(raise_exception=True)
         # create static device for recovery purposes
         device = StaticDevice.objects.create(
-            user=request.user,
-            name="{} static device".format(request.user)
+            user=request.user, name=f"{request.user} static device"
         )
         tokens = []
-        for cpt in range(10):
+        for _ in range(10):
             token = StaticToken.random_token()
             device.token_set.create(token=token)
             tokens.append(token)

@@ -36,9 +36,8 @@ class Command(BaseCommand):
             file=self.stdout)
         for account in qset.values("username", "last_login"):
             print(
-                "> {}\n    (last login: {})".format(
-                    account["username"], account["last_login"]),
-                file=self.stdout
+                f'> {account["username"]}\n    (last login: {account["last_login"]})',
+                file=self.stdout,
             )
 
     def handle(self, *args, **options):
@@ -63,8 +62,7 @@ class Command(BaseCommand):
             return
         action = "delete" if options["delete"] else "disable"
         if not options["silent"]:
-            answer = input(
-                "Do you want to {} those accounts? (y/N) ".format(action))
+            answer = input(f"Do you want to {action} those accounts? (y/N) ")
             if not answer.lower().startswith("y"):
                 return
         if action == "disable":

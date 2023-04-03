@@ -150,9 +150,7 @@ class Domain(mixins.MessageLimitMixin, AdminObject):
     def awaiting_checks(self):
         """Return true if the domain has no valid MX record and was created
         in the latest 24h."""
-        if (not self.mxrecord_set.has_valids()) and self.just_created:
-            return True
-        return False
+        return bool((not self.mxrecord_set.has_valids()) and self.just_created)
 
     @property
     def dns_global_status(self) -> str:
@@ -179,9 +177,7 @@ class Domain(mixins.MessageLimitMixin, AdminObject):
                 errors.append("autoconfig")
             if self.autodiscover_record is None:
                 errors.append("autodiscover")
-        if len(errors) == 0:
-            return "ok"
-        return "critical"
+        return "critical" if errors else "ok"
 
     @cached_property
     def dnsbl_status_color(self):
@@ -223,17 +219,20 @@ class Domain(mixins.MessageLimitMixin, AdminObject):
         """Return current quota allocation."""
         if not self.quota:
             return 0
-        if not self.mailbox_set.exists():
-            return 0
-        return self.mailbox_set.aggregate(
-            total=models.Sum("quota"))["total"]
+        return (
+            self.mailbox_set.aggregate(total=models.Sum("quota"))["total"]
+            if self.mailbox_set.exists()
+            else 0
+        )
 
     @cached_property
     def allocated_quota_in_percent(self):
         """Return allocated quota in percent."""
-        if not self.allocated_quota:
-            return 0
-        return int(self.allocated_quota / float(self.quota) * 100)
+        return (
+            int(self.allocated_quota / float(self.quota) * 100)
+            if self.allocated_quota
+            else 0
+        )
 
     @cached_property
     def used_quota(self):
@@ -242,16 +241,20 @@ class Domain(mixins.MessageLimitMixin, AdminObject):
 
         if not self.quota:
             return 0
-        if not self.mailbox_set.exists():
-            return 0
-        return int(Quota.objects.get_domain_usage(self) / 1048576)
+        return (
+            int(Quota.objects.get_domain_usage(self) / 1048576)
+            if self.mailbox_set.exists()
+            else 0
+        )
 
     @cached_property
     def used_quota_in_percent(self):
         """Return used quota in percent."""
-        if not self.allocated_quota:
-            return 0
-        return int(self.used_quota / float(self.quota) * 100)
+        return (
+            int(self.used_quota / float(self.quota) * 100)
+            if self.allocated_quota
+            else 0
+        )
 
     @property
     def message_counter_key(self):
@@ -261,7 +264,7 @@ class Domain(mixins.MessageLimitMixin, AdminObject):
     @property
     def bind_format_dkim_public_key(self):
         """Return DKIM public key using Bind format."""
-        record = "v=DKIM1;k=rsa;p=%s" % self.dkim_public_key
+        record = f"v=DKIM1;k=rsa;p={self.dkim_public_key}"
         # TXT records longer than 255 characters need split into chunks
         # split record into 74 character chunks (+2 for indent, +2 for quotes(")
         # == 78 characters) to make more readable in text editors.
@@ -274,8 +277,7 @@ class Domain(mixins.MessageLimitMixin, AdminObject):
                 split_record.append("  \"%s\"" % record)
                 break
         record = "\n".join(split_record)
-        return "{}._domainkey.{}. IN TXT (\n{})".format(
-            self.dkim_key_selector, self.name, record)
+        return f"{self.dkim_key_selector}._domainkey.{self.name}. IN TXT (\n{record})"
 
     def add_admin(self, account):
         """Add a new administrator to this domain.
@@ -334,7 +336,7 @@ class Domain(mixins.MessageLimitMixin, AdminObject):
         if param_tools.get_global_parameter("auto_account_removal"):
             User.objects.filter(mailbox__domain=self).delete()
         elif self.mailbox_set.count():
-            Quota.objects.filter(username__contains="@%s" % self.name).delete()
+            Quota.objects.filter(username__contains=f"@{self.name}").delete()
             ungrant_access_to_objects(self.mailbox_set.all())
         super().delete()
 
@@ -361,12 +363,15 @@ class Domain(mixins.MessageLimitMixin, AdminObject):
         domains_must_have_authorized_mx = (
             param_tools.get_global_parameter("domains_must_have_authorized_mx")
         )
-        if domains_must_have_authorized_mx and not user.is_superuser:
-            if not lib.domain_has_authorized_mx(self.name):
-                raise BadRequest(
-                    _("{}: no authorized MX record found for domain")
-                    .format(self.name)
-                )
+        if (
+            domains_must_have_authorized_mx
+            and not user.is_superuser
+            and not lib.domain_has_authorized_mx(self.name)
+        ):
+            raise BadRequest(
+                _("{}: no authorized MX record found for domain")
+                .format(self.name)
+            )
         try:
             self.quota = int(row[2].strip())
         except ValueError:
@@ -403,8 +408,7 @@ class Domain(mixins.MessageLimitMixin, AdminObject):
                 self.enabled
             ]
         ]
-        for dalias in self.domainalias_set.all():
-            result.append(dalias.to_csv_row())
+        result.extend(dalias.to_csv_row() for dalias in self.domainalias_set.all())
         return result
 
     def to_csv(self, csvwriter):

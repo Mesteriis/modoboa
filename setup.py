@@ -25,9 +25,9 @@ def get_requirements(requirements_file):
         for req in parse_requirements(requirements_file, session="hack"):
             try:
                 if req.markers:
-                    requirements.append("%s;%s" % (req.req, req.markers))
+                    requirements.append(f"{req.req};{req.markers}")
                 else:
-                    requirements.append("%s" % req.req)
+                    requirements.append(f"{req.req}")
             except AttributeError:
                 # pip >= 20.0.2
                 requirements.append(req.requirement)

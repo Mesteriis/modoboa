@@ -34,5 +34,5 @@ def get_default_graphic_sets(sender, **kwargs):
     }
     if kwargs.get("user").is_superuser:
         account_gset = graphics.AccountGraphicSet()
-        result.update({account_gset.html_id: account_gset})
+        result[account_gset.html_id] = account_gset
     return result

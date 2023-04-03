@@ -9,7 +9,7 @@ def move_relaydomain_to_transport(apps, schema_editor):
     Transport = apps.get_model("transport", "Transport")
     ra_to_create = []
     for rd in RelayDomain.objects.select_related("domain", "service"):
-        next_hop = "[{}]:{}".format(rd.target_host, rd.target_port)
+        next_hop = f"[{rd.target_host}]:{rd.target_port}"
         tr = Transport.objects.create(
             pattern=rd.domain.name,
             service="relay",

@@ -54,8 +54,7 @@ urlpatterns = [
 exts_pool.load_all()
 urlpatterns += exts_pool.get_urls()
 
-extra_routes = core_signals.extra_uprefs_routes.send(sender="urls")
-if extra_routes:
+if extra_routes := core_signals.extra_uprefs_routes.send(sender="urls"):
     extra_routes = reduce(
         lambda a, b: a + b, [route[1] for route in extra_routes])
     urlpatterns += extra_routes

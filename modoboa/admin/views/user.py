@@ -21,15 +21,7 @@ def forward(request, tplname="admin/forward.html"):
     if request.method == "POST":
         form = ForwardForm(request.POST)
         if form.is_valid():
-            recipients = form.cleaned_data["dest"]
-            if not recipients:
-                Alias.objects.filter(
-                    address=mb.full_address, internal=False).delete()
-                # Make sure internal self-alias is enabled
-                Alias.objects.filter(
-                    address=mb.full_address, internal=True
-                ).update(enabled=True)
-            else:
+            if recipients := form.cleaned_data["dest"]:
                 if al is None:
                     al = Alias.objects.create(
                         address=mb.full_address,
@@ -49,6 +41,13 @@ def forward(request, tplname="admin/forward.html"):
                         address=mb.full_address, internal=True
                     ).update(enabled=False)
                 al.set_recipients(recipients)
+            else:
+                Alias.objects.filter(
+                    address=mb.full_address, internal=False).delete()
+                # Make sure internal self-alias is enabled
+                Alias.objects.filter(
+                    address=mb.full_address, internal=True
+                ).update(enabled=True)
             return render_to_json_response(_("Forward updated"))
 
         return render_to_json_response(

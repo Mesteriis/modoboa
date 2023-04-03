@@ -49,12 +49,12 @@ def dologin(request):
             user = authenticate(username=form.cleaned_data["username"],
                                 password=form.cleaned_data["password"])
             if user and user.is_active:
-                condition = (
-                    user.is_local and
-                    param_tools.get_global_parameter(
-                        "update_scheme", raise_exception=False)
-                )
-                if condition:
+                if condition := (
+                    user.is_local
+                    and param_tools.get_global_parameter(
+                        "update_scheme", raise_exception=False
+                    )
+                ):
                     # check if password scheme is correct
                     scheme = param_tools.get_global_parameter(
                         "password_scheme", raise_exception=False)
@@ -177,8 +177,7 @@ class PasswordResetView(auth_views.PasswordResetView):
         secret = cryptutils.random_hex_key(20)
         code = oath.totp(secret)
         text = _(
-            "Please use the following code to recover your Modoboa password: {}"
-            .format(code)
+            f"Please use the following code to recover your Modoboa password: {code}"
         )
         if not backend.send(text, [str(user.phone_number)]):
             return super().form_valid(form)
@@ -232,8 +231,7 @@ class ResendSMSCodeView(generic.View):
         secret = cryptutils.random_hex_key(20)
         code = oath.totp(secret)
         text = _(
-            "Please use the following code to recover your Modoboa password: {}"
-            .format(code)
+            f"Please use the following code to recover your Modoboa password: {code}"
         )
         if not backend.send(text, [user.phone_number]):
             raise Http404

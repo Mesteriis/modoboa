@@ -64,8 +64,7 @@ def log_object_removal(sender, instance, **kwargs):
         "object": smart_text(version.content_type).capitalize(),
         "name": version.object_repr, "action": _("deleted")
     }
-    request = get_request()
-    if request:
+    if request := get_request():
         msg += _("user {}").format(request.user.username)
     else:
         msg += _("management command")
@@ -86,9 +85,7 @@ def create_local_config(sender, **kwargs):
 @receiver(signals.pre_delete, sender=models.User)
 def update_permissions(sender, instance, **kwargs):
     """Permissions cleanup."""
-    request = get_request()
-    # request migth be None (management command context)
-    if request:
+    if request := get_request():
         from_user = request.user
         if from_user == instance:
             raise exceptions.PermDeniedException(

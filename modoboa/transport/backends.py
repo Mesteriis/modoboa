@@ -32,7 +32,7 @@ class TransportBackend(object):
         """Check that values are correct."""
         errors = []
         for setting in self.settings:
-            fname = "{}_{}".format(self.name, setting["name"])
+            fname = f'{self.name}_{setting["name"]}'
             value = values.get(fname)
             if not value:
                 if not setting.get("required", True):
@@ -42,11 +42,14 @@ class TransportBackend(object):
             ftype = setting.get("type", "string")
             if ftype == "string":
                 validator = setting.get("validator")
-                vfunc = "_validate_{}".format(validator)
-                if validator and hasattr(self, vfunc):
-                    if getattr(self, vfunc)(value):
-                        continue
-                else:
+                vfunc = f"_validate_{validator}"
+                if (
+                    validator
+                    and hasattr(self, vfunc)
+                    and getattr(self, vfunc)(value)
+                    or not validator
+                    or not hasattr(self, vfunc)
+                ):
                     continue
             elif ftype == "int" and isinstance(value, int):
                 continue
@@ -70,9 +73,7 @@ class TransportBackendManager(object):
     def get_backend(self, name, **kwargs):
         """Return backend instance."""
         backend_class = self.backends.get(name)
-        if backend_class is None:
-            return None
-        return backend_class(**kwargs)
+        return None if backend_class is None else backend_class(**kwargs)
 
     def get_backend_list(self):
         """Return known backend list."""
@@ -87,9 +88,7 @@ class TransportBackendManager(object):
     def get_backend_settings(self, name):
         """Return backend settings."""
         backend_class = self.backends.get(name)
-        if backend_class is None:
-            return None
-        return backend_class.settings
+        return None if backend_class is None else backend_class.settings
 
     def get_all_backend_settings(self):
         """Return all backend settings."""

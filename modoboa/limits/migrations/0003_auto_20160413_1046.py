@@ -52,16 +52,33 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='UserObjectLimit',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                (
+                    'id',
+                    models.AutoField(
+                        verbose_name='ID',
+                        serialize=False,
+                        auto_created=True,
+                        primary_key=True,
+                    ),
+                ),
                 ('name', models.CharField(max_length=254)),
                 ('max_value', models.IntegerField(default=-2)),
-                ('content_type', models.ForeignKey(to='contenttypes.ContentType', on_delete=models.CASCADE)),
-                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
+                (
+                    'content_type',
+                    models.ForeignKey(
+                        to='contenttypes.ContentType', on_delete=models.CASCADE
+                    ),
+                ),
+                (
+                    'user',
+                    models.ForeignKey(
+                        to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+                    ),
+                ),
             ],
         ),
         migrations.AlterUniqueTogether(
-            name='userobjectlimit',
-            unique_together=set([('user', 'name')]),
+            name='userobjectlimit', unique_together={('user', 'name')}
         ),
-        migrations.RunPython(move_limits_to_user)
+        migrations.RunPython(move_limits_to_user),
     ]

@@ -23,13 +23,9 @@ def update_domain_mxs_and_mailboxes(sender, instance, **kwargs):
         quota=instance.default_mailbox_quota)
     if instance.old_mail_homes is None:
         return
-    qset = (
-        models.Quota.objects.filter(
-            username__contains="@{}".format(instance.oldname))
-    )
+    qset = models.Quota.objects.filter(username__contains=f"@{instance.oldname}")
     for q in qset:
-        username = q.username.replace(
-            "@{}".format(instance.oldname), "@{}".format(instance.name))
+        username = q.username.replace(f"@{instance.oldname}", f"@{instance.name}")
         models.Quota.objects.create(
             username=username, bytes=q.bytes, messages=q.messages)
         q.delete()
@@ -39,8 +35,7 @@ def update_domain_mxs_and_mailboxes(sender, instance, **kwargs):
     # .update(address=Concat("local_part", Value(instance.name)))
     # if the local_part was stored aside the address...
     for alias in instance.alias_set.all():
-        alias.address = "{}@{}".format(
-            alias.address.split("@", 1)[0], instance.name)
+        alias.address = f'{alias.address.split("@", 1)[0]}@{instance.name}'
         alias.save(update_fields=["address"])
 
 
@@ -50,16 +45,17 @@ def create_alias_for_domainalias(sender, instance, **kwargs):
     if not kwargs.get("created"):
         return
     alias = models.Alias.objects.create(
-        address=u"@{}".format(instance.name), enabled=True, internal=True)
+        address=f"@{instance.name}", enabled=True, internal=True
+    )
     models.AliasRecipient.objects.create(
-        address=u"@{}".format(instance.target.name), alias=alias)
+        address=f"@{instance.target.name}", alias=alias
+    )
 
 
 @receiver(signals.post_delete, sender=models.DomainAlias)
 def remove_alias_for_domainalias(sender, instance, **kwargs):
     """Remove the alias associated to domain alias."""
-    models.Alias.objects.filter(
-        address=u"@{}".format(instance.name)).delete()
+    models.Alias.objects.filter(address=f"@{instance.name}").delete()
 
 
 @receiver(signals.post_save, sender=models.Mailbox)
@@ -115,22 +111,20 @@ def mailbox_deleted_handler(sender, **kwargs):
         if not alias.aliasrecipient_set.exists():
             alias.delete()
     models.Quota.objects.filter(username=mb.full_address).delete()
-    request = lib_signals.get_request()
-    if request:
+    if request := lib_signals.get_request():
         if not request.localconfig.parameters.get_value(
                 "handle_mailboxes", raise_exception=False):
             return
         keepdir = request.POST.get("keepdir", "false") == "true"
         if keepdir:
             return
-        mb.delete_dir()
     else:
         # Management command context
         localconfig = core_models.LocalConfig.objects.first()
         if not localconfig.parameters.get_value(
                 "handle_mailboxes", raise_exception=False):
             return
-        mb.delete_dir()
+    mb.delete_dir()
 
 
 @receiver(signals.post_delete, sender=models.Mailbox)
@@ -236,7 +230,7 @@ def import_account_mailbox(sender, user, account, row, **kwargs):
                     _("Account import failed (%s): wrong quota value")
                     % account.username
                 )
-        use_domain_quota = True if not quota else False
+        use_domain_quota = not quota
         mb = models.Mailbox(
             address=mailbox, domain=domain,
             user=account, use_domain_quota=use_domain_quota)
@@ -283,14 +277,18 @@ def user_menu(sender, location, user, **kwargs):
     """Add extra menu entries for users."""
     if location != "uprefs_menu":
         return []
-    if not hasattr(user, "mailbox"):
-        return []
-    return [
-        {"name": "forward",
-         "class": "ajaxnav",
-         "url": "forward/",
-         "label": _("Forward")}
-    ]
+    return (
+        [
+            {
+                "name": "forward",
+                "class": "ajaxnav",
+                "url": "forward/",
+                "label": _("Forward"),
+            }
+        ]
+        if hasattr(user, "mailbox")
+        else []
+    )
 
 
 @receiver(core_signals.user_login)

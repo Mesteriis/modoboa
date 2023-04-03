@@ -35,8 +35,7 @@ class APIAdminLimitsTestCase(lib_tests.ModoAPITestCase):
 
     def test_domadmins_limit(self):
         """Check domain admins limit."""
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Token " + self.r_token.key)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.r_token.key}")
 
         limit = self.reseller.userobjectlimit_set.get(name="domain_admins")
         url = reverse("v1:account-list")
@@ -76,8 +75,7 @@ class APIAdminLimitsTestCase(lib_tests.ModoAPITestCase):
 
     def test_domains_limit(self):
         """Check domains limit."""
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Token " + self.r_token.key)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.r_token.key}")
         limit = self.reseller.userobjectlimit_set.get(name="domains")
         quota = self.reseller.userobjectlimit_set.get(name="quota")
         quota.max_value = 3
@@ -115,8 +113,7 @@ class APIAdminLimitsTestCase(lib_tests.ModoAPITestCase):
 
     def test_domain_aliases_limit(self):
         """Check domain aliases limit."""
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Token " + self.r_token.key)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.r_token.key}")
         domain = Domain.objects.get(name="test.com")
         domain.add_admin(self.reseller)
         limit = self.reseller.userobjectlimit_set.get(name="domain_aliases")
@@ -137,8 +134,7 @@ class APIAdminLimitsTestCase(lib_tests.ModoAPITestCase):
 
     def test_mailboxes_limit(self):
         """Check mailboxes limit."""
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Token " + self.da_token.key)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.da_token.key}")
 
         limit = self.user.userobjectlimit_set.get(name="mailboxes")
         url = reverse("v1:account-list")
@@ -168,8 +164,7 @@ class APIAdminLimitsTestCase(lib_tests.ModoAPITestCase):
 
     def test_aliases_limit(self):
         """Check mailbox aliases limit."""
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Token " + self.da_token.key)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.da_token.key}")
 
         limit = self.user.userobjectlimit_set.get(name="mailbox_aliases")
         url = reverse("v1:alias-list")
@@ -293,14 +288,12 @@ class ResourcesAPITestCase(lib_tests.ModoAPITestCase):
         compare(expected, response.data)
 
         # As reseller => fails
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Token {}".format(self.r_token.key))
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.r_token.key}")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
         # As domain admin => fails
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Token {}".format(self.da_token.key))
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.da_token.key}")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
@@ -317,8 +310,7 @@ class ResourcesAPITestCase(lib_tests.ModoAPITestCase):
             1000)
 
         # As domain admin => fails
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Token {}".format(self.da_token.key))
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.da_token.key}")
         resources.update({"domains": 2, "mailboxes": 2})
         url = reverse("v1:resources-detail", args=[self.user.pk])
         response = self.client.put(url, resources)
@@ -326,8 +318,7 @@ class ResourcesAPITestCase(lib_tests.ModoAPITestCase):
 
         # As reseller => ok
         permissions.grant_access_to_object(self.reseller, self.user, True)
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Token {}".format(self.r_token.key))
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.r_token.key}")
         resources.update({"domains": 500, "mailboxes": 500})
         url = reverse("v1:resources-detail", args=[self.user.pk])
         response = self.client.put(url, resources)

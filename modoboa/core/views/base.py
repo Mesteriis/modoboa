@@ -14,11 +14,9 @@ def find_nextlocation(request, user):
         # Redirect to profile on first login
         return reverse("core:user_index")
     nextlocation = request.POST.get("next", request.GET.get("next"))
-    condition = (
-        nextlocation and
-        is_safe_url(nextlocation, request.get_host())
-    )
-    if condition:
+    if condition := (
+        nextlocation and is_safe_url(nextlocation, request.get_host())
+    ):
         return nextlocation
     if request.user.role == "SimpleUsers":
         topredir = request.localconfig.parameters.get_value(

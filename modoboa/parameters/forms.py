@@ -35,10 +35,8 @@ class GenericParametersForm(forms.Form):
         """Add visibility rules to this form."""
         for key, rule in list(rules.items()):
             field, value = rule.split("=")
-            visibility = {
-                "field": "id_%s-%s" % (self.app, field), "value": value
-            }
-            self.visirules["%s-%s" % (self.app, key)] = visibility
+            visibility = {"field": f"id_{self.app}-{field}", "value": value}
+            self.visirules[f"{self.app}-{key}"] = visibility
 
     def _add_dynamic_fields(self):
         """Add dynamic fields to this form."""
@@ -76,11 +74,11 @@ class AdminParametersForm(GenericParametersForm):
 
     def save(self):
         """Save parameters to database."""
-        parameters = {}
-        for name, value in list(self.cleaned_data.items()):
-            if isinstance(self.fields[name], form_utils.SeparatorField):
-                continue
-            parameters[name] = value
+        parameters = {
+            name: value
+            for name, value in list(self.cleaned_data.items())
+            if not isinstance(self.fields[name], form_utils.SeparatorField)
+        }
         self.localconfig.parameters.set_values(parameters, app=self.app)
 
     def to_django_settings(self):
@@ -107,9 +105,9 @@ class UserParametersForm(GenericParametersForm):
 
     def save(self):
         """Save new values."""
-        parameters = {}
-        for name, value in list(self.cleaned_data.items()):
-            if isinstance(self.fields[name], form_utils.SeparatorField):
-                continue
-            parameters[name] = value
+        parameters = {
+            name: value
+            for name, value in list(self.cleaned_data.items())
+            if not isinstance(self.fields[name], form_utils.SeparatorField)
+        }
         self.user.parameters.set_values(parameters, app=self.app)

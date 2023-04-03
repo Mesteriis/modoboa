@@ -2,6 +2,8 @@ from django.db import models, migrations
 from django.conf import settings
 
 
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -12,7 +14,15 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Limit',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                (
+                    'id',
+                    models.AutoField(
+                        verbose_name='ID',
+                        serialize=False,
+                        auto_created=True,
+                        primary_key=True,
+                    ),
+                ),
                 ('name', models.CharField(max_length=255)),
                 ('curvalue', models.IntegerField(default=0)),
                 ('maxvalue', models.IntegerField(default=-2)),
@@ -25,8 +35,21 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='LimitsPool',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('user', models.OneToOneField(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
+                (
+                    'id',
+                    models.AutoField(
+                        verbose_name='ID',
+                        serialize=False,
+                        auto_created=True,
+                        primary_key=True,
+                    ),
+                ),
+                (
+                    'user',
+                    models.OneToOneField(
+                        to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+                    ),
+                ),
             ],
             options={
                 'db_table': 'limits_limitspool',
@@ -36,11 +59,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='limit',
             name='pool',
-            field=models.ForeignKey(to='limits.LimitsPool', on_delete=models.CASCADE),
+            field=models.ForeignKey(
+                to='limits.LimitsPool', on_delete=models.CASCADE
+            ),
             preserve_default=True,
         ),
         migrations.AlterUniqueTogether(
-            name='limit',
-            unique_together=set([('name', 'pool')]),
+            name='limit', unique_together={('name', 'pool')}
         ),
     ]

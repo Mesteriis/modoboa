@@ -102,20 +102,18 @@ query = {{ query|safe }}
         dbhost = db_settings.get("HOST", "127.0.0.1")
         dbport = db_settings.get("PORT", "")
         if len(dbport):
-            dbhost += ':' + dbport
+            dbhost += f':{dbport}'
 
-        commandline = "{} {}".format(
-            os.path.basename(sys.argv[0]), " ".join(sys.argv[1:]))
-        context = {
+        commandline = f'{os.path.basename(sys.argv[0])} {" ".join(sys.argv[1:])}'
+        return {
             "date": timezone.now(),
             "commandline": commandline,
             "dbtype": dbtype,
             "dbuser": db_settings["USER"],
             "dbpass": db_settings["PASSWORD"],
             "dbname": db_settings["NAME"],
-            "dbhost": dbhost
+            "dbhost": dbhost,
         }
-        return context
 
     def __render_map_file(
             self, mapobject, destdir, context, force_overwrite=False):
@@ -124,8 +122,8 @@ query = {{ query|safe }}
         if os.path.exists(fullpath) and not force_overwrite:
             if not self.__check_file(fullpath):
                 print(
-                    "Cannot upgrade '{}' map because it has been modified."
-                    .format(mapobject.filename))
+                    f"Cannot upgrade '{mapobject.filename}' map because it has been modified."
+                )
                 return self.__checksums[mapobject.filename]
             mapcontent = utils.parse_map_file(fullpath)
             context = copy.deepcopy(context)
@@ -166,5 +164,4 @@ query = {{ query|safe }}
             checksums[mapobject.filename] = checksum
         with open(self.__checksums_file, "w") as fp:
             for fname, checksum in list(checksums.items()):
-                fp.write("{}:{}:{}\n".format(
-                    fname, context["dbtype"], checksum))
+                fp.write(f'{fname}:{context["dbtype"]}:{checksum}\n')

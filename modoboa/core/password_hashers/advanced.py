@@ -145,7 +145,7 @@ if argon2_hasher is not None:
         def __init__(self,):
             super(ARGON2IDHasher, self).__init__()
 
-            parameters = dict()
+            parameters = {}
 
             if hasattr(settings, "MODOBOA_ARGON2_TIME_COST"):
                 parameters["time_cost"] = settings.MODOBOA_ARGON2_TIME_COST

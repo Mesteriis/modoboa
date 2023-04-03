@@ -83,8 +83,7 @@ def _domains(request):
     if page is None:
         context["length"] = 0
     else:
-        tpl_context = {"domains": page.object_list}
-        tpl_context.update(dns_checks)
+        tpl_context = {"domains": page.object_list} | dns_checks
         context["rows"] = render_to_string(
             "admin/domains_table.html", tpl_context, request
         )
@@ -125,9 +124,7 @@ def get_next_page(request):
     objtype = request.GET.get("objtype", "domain")
     if objtype == "domain":
         return _domains(request)
-    if objtype == "quota":
-        return list_quotas(request)
-    return list_logs(request)
+    return list_quotas(request) if objtype == "quota" else list_logs(request)
 
 
 @login_required
@@ -144,12 +141,11 @@ def list_quotas(request):
     domains = Domain.objects.get_for_admin(request.user)
     domains = domains.exclude(quota=0)
     if sort_order in ["name", "quota"]:
-        domains = domains.order_by("{}{}".format(sort_dir, sort_order))
+        domains = domains.order_by(f"{sort_dir}{sort_order}")
     elif sort_order == "allocated_quota":
-        domains = (
-            domains.annotate(allocated_quota=Sum("mailbox__quota"))
-            .order_by("{}{}".format(sort_dir, sort_order))
-        )
+        domains = domains.annotate(
+            allocated_quota=Sum("mailbox__quota")
+        ).order_by(f"{sort_dir}{sort_order}")
     page = get_listing_page(domains, request.GET.get("page", 1))
     context = {
         "headers": render_to_string(
@@ -179,7 +175,7 @@ def list_logs(request):
         )
     else:
         logs = ml_models.Maillog.objects.all()
-    logs = logs.order_by("{}{}".format(sort_dir, sort_order))
+    logs = logs.order_by(f"{sort_dir}{sort_order}")
     if search:
         logs = logs.filter(
             Q(sender__icontains=search) |
@@ -226,7 +222,7 @@ def editdomain(request, dom_id):
     results = signals.get_domain_form_instances.send(
         sender="editdomain", user=request.user, domain=domain)
     for result in results:
-        instances.update(result[1])
+        instances |= result[1]
     return DomainForm(request, instances=instances).process()
 
 

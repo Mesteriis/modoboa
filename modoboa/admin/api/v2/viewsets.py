@@ -227,9 +227,7 @@ class IdentityViewSet(GetThrottleViewsetMixin, viewsets.ViewSet):
             renderer_classes=(lib_renderers.CSVRenderer,))
     def export(self, request, **kwargs):
         """Export accounts and aliases to CSV."""
-        result = []
-        for idt in lib.get_identities(request.user):
-            result.append(idt.to_csv_row())
+        result = [idt.to_csv_row() for idt in lib.get_identities(request.user)]
         return response.Response(result)
 
     @extend_schema(
@@ -294,15 +292,7 @@ class UserAccountViewSet(GetThrottleViewsetMixin, viewsets.ViewSet):
             return response.Response(serializer.data)
         serializer = serializers.UserForwardSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        recipients = serializer.validated_data.get("recipients")
-        if not recipients:
-            models.Alias.objects.filter(
-                address=mb.full_address, internal=False).delete()
-            # Make sure internal self-alias is enabled
-            models.Alias.objects.filter(
-                address=mb.full_address, internal=True
-            ).update(enabled=True)
-        else:
+        if recipients := serializer.validated_data.get("recipients"):
             if alias is None:
                 alias = models.Alias.objects.create(
                     address=mb.full_address,
@@ -323,6 +313,13 @@ class UserAccountViewSet(GetThrottleViewsetMixin, viewsets.ViewSet):
                     address=mb.full_address, internal=True
                 ).update(enabled=False)
             alias.set_recipients(recipients)
+        else:
+            models.Alias.objects.filter(
+                address=mb.full_address, internal=False).delete()
+            # Make sure internal self-alias is enabled
+            models.Alias.objects.filter(
+                address=mb.full_address, internal=True
+            ).update(enabled=True)
         return response.Response(serializer.validated_data)
 
 

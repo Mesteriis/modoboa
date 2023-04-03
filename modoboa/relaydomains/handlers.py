@@ -20,9 +20,7 @@ def check_relaydomain_alias(sender, recipients, **kwargs):
         return False
     qset = admin_models.Mailbox.objects.select_related("domain").filter(
         domain__name=domain, address=localpart)
-    if qset.exists():
-        return False
-    return True
+    return not qset.exists()
 
 
 @receiver(signals.post_save, sender=admin_models.Domain)
@@ -71,11 +69,7 @@ def fill_domain_instances(sender, user, domain, **kwargs):
         not user.has_perm("transport.change_transport") or
         domain.type != "relaydomain"
     )
-    if condition:
-        return {}
-    return {
-        "relaydomain": domain.transport
-    }
+    return {} if condition else {"relaydomain": domain.transport}
 
 
 @receiver(admin_signals.extra_domain_wizard_steps)
@@ -90,9 +84,7 @@ def extra_wizard_step(sender, **kwargs):
 @receiver(admin_signals.import_object)
 def get_import_func(sender, objtype, **kwargs):
     """Return function used to import objtype."""
-    if objtype == "relaydomain":
-        return lib.import_relaydomain
-    return None
+    return lib.import_relaydomain if objtype == "relaydomain" else None
 
 
 @receiver(signals.post_save, sender=tr_models.Transport)

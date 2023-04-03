@@ -22,7 +22,7 @@ class BackendSettingsMixin(object):
     def inject_backend_settings(self, name, settings):
         """Inject backend settings to form."""
         for setting in settings:
-            fullname = "{}_{}".format(name, setting["name"])
+            fullname = f'{name}_{setting["name"]}'
             options = {}
             ftype = setting.get("type", "string")
             if self.instance.pk:
@@ -79,8 +79,8 @@ class TransportForm(BackendSettingsMixin, forms.ModelForm):
         backend_name = self.data.get("service")
         backend_settings = backends.manager.get_backend_settings(backend_name)
         for name, field in self.fields.items():
-            if name.startswith("{}_".format(backend_name)):
-                name = name.replace("{}_".format(backend_name), "")
+            if name.startswith(f"{backend_name}_"):
+                name = name.replace(f"{backend_name}_", "")
                 for setting in backend_settings:
                     if setting["name"] == name:
                         break

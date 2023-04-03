@@ -26,9 +26,8 @@ class Operations(object):
             "enabled": True,
             "stepid": "step3",
             "quota": 0,
-            "default_mailbox_quota": 0
-        }
-        values.update(kwargs)
+            "default_mailbox_quota": 0,
+        } | kwargs
         return self.ajax_post(
             reverse("admin:domain_add"),
             values, status
@@ -51,7 +50,7 @@ class Operations(object):
         else:
             aliases.remove(name)
         for cpt, alias in enumerate(aliases):
-            fname = "aliases" if not cpt else "aliases_%d" % cpt
+            fname = "aliases_%d" % cpt if cpt else "aliases"
             values[fname] = alias
         return self.ajax_post(
             reverse("admin:domain_change",
