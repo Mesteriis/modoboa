@@ -41,7 +41,7 @@ class PDFCredentialViewTestCase(ModoAPITestCase):
     def test_pdfcredentials_disabled(self):
         self.set_global_parameter("enabled_pdfcredentials", False)
         values = self._create_account("leon5@test.com")
-        fname = os.path.join(self.workdir, "{}.pdf".format(values["username"]))
+        fname = os.path.join(self.workdir, f'{values["username"]}.pdf')
         self.assertFalse(os.path.exists(fname))
 
         # Check that link is not present in listing page
@@ -60,7 +60,7 @@ class PDFCredentialViewTestCase(ModoAPITestCase):
     def test_password_updated(self):
         """Check that document is generated at account creation/update."""
         values = self._create_account("leon@test.com")
-        fname = os.path.join(self.workdir, "{}.pdf".format(values["username"]))
+        fname = os.path.join(self.workdir, f'{values["username"]}.pdf')
         self.assertTrue(os.path.exists(fname))
         account = core_models.User.objects.get(username=values["username"])
 
@@ -111,20 +111,20 @@ class PDFCredentialViewTestCase(ModoAPITestCase):
         """Add connection settings to documents."""
         self.set_global_parameter("include_connection_settings", True)
         values = self._create_account("leon@test.com")
-        fname = os.path.join(self.workdir, "{}.pdf".format(values["username"]))
+        fname = os.path.join(self.workdir, f'{values["username"]}.pdf')
         self.assertTrue(os.path.exists(fname))
 
     def test_with_custom_message(self):
         """Add custom message to documents."""
         self.set_global_parameter("custom_message", "This is a test message.")
         values = self._create_account("leon@test.com")
-        fname = os.path.join(self.workdir, "{}.pdf".format(values["username"]))
+        fname = os.path.join(self.workdir, f'{values["username"]}.pdf')
         self.assertTrue(os.path.exists(fname))
 
     def test_account_delete(self):
         """Check that document is deleted with account."""
         values = self._create_account("leon@test.com")
-        fname = os.path.join(self.workdir, "{}.pdf".format(values["username"]))
+        fname = os.path.join(self.workdir, f'{values["username"]}.pdf')
         self.assertTrue(os.path.exists(fname))
         account = core_models.User.objects.get(username=values["username"])
         url = reverse("v2:account-delete", args=[account.pk])
@@ -135,13 +135,13 @@ class PDFCredentialViewTestCase(ModoAPITestCase):
     def test_with_custom_logo(self):
         """Check that document is deleted with account."""
         values = self._create_account("leon@test.com")
-        fname = os.path.join(self.workdir, "{}.pdf".format(values["username"]))
+        fname = os.path.join(self.workdir, f'{values["username"]}.pdf')
         self.assertTrue(os.path.exists(fname))
 
     def test_download_and_delete_account(self):
         """Check that document is deleted with account."""
         values = self._create_account("leon@test.com")
-        fname = os.path.join(self.workdir, "{}.pdf".format(values["username"]))
+        fname = os.path.join(self.workdir, f'{values["username"]}.pdf')
         self.assertTrue(os.path.exists(fname))
         account = core_models.User.objects.get(username=values["username"])
 

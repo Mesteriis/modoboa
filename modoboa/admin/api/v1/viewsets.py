@@ -110,11 +110,10 @@ class AccountViewSet(GetThrottleViewsetMixin, lib_viewsets.RevisionModelMixin, v
         """Filter queryset based on current user."""
         user = self.request.user
         ids = user.objectaccess_set \
-            .filter(content_type=ContentType.objects.get_for_model(user)) \
-            .values_list("object_id", flat=True)
+                .filter(content_type=ContentType.objects.get_for_model(user)) \
+                .values_list("object_id", flat=True)
         queryset = core_models.User.objects.filter(pk__in=ids)
-        domain = self.request.query_params.get("domain")
-        if domain:
+        if domain := self.request.query_params.get("domain"):
             queryset = queryset.filter(mailbox__domain__name=domain)
         return queryset
 
@@ -144,10 +143,11 @@ class AccountViewSet(GetThrottleViewsetMixin, lib_viewsets.RevisionModelMixin, v
         email = request.GET.get("email")
         if not email:
             raise ParseError("email not provided")
-        if not core_models.User.objects.filter(email=email).exists():
-            data = {"exists": False}
-        else:
-            data = {"exists": True}
+        data = (
+            {"exists": True}
+            if core_models.User.objects.filter(email=email).exists()
+            else {"exists": False}
+        )
         serializer = serializers.AccountExistsSerializer(data)
         return Response(serializer.data)
 
@@ -201,8 +201,7 @@ class AliasViewSet(GetThrottleViewsetMixin, lib_viewsets.RevisionModelMixin, vie
             .values_list("object_id", flat=True)
         )
         queryset = models.Alias.objects.filter(pk__in=ids)
-        domain = self.request.query_params.get("domain")
-        if domain:
+        if domain := self.request.query_params.get("domain"):
             queryset = queryset.filter(domain__name=domain)
         return queryset
 

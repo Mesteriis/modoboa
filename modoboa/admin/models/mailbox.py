@@ -25,8 +25,7 @@ class QuotaManager(models.Manager):
 
     def get_domain_usage(self, domain):
         """Return current usage for domain."""
-        qset = self.get_queryset().filter(
-            username__endswith="@{}".format(domain.name))
+        qset = self.get_queryset().filter(username__endswith=f"@{domain.name}")
         result = qset.aggregate(usage=models.Sum("bytes")).get("usage", 0)
         if result is None:
             result = 0
@@ -76,12 +75,9 @@ class MailboxManager(Manager):
                     Q(domain__name__contains=squery)
                 )
         ids = admin.objectaccess_set \
-            .filter(content_type=ContentType.objects.get_for_model(Mailbox)) \
-            .values_list("object_id", flat=True)
-        if qf is not None:
-            qf = Q(pk__in=ids) & qf
-        else:
-            qf = Q(pk__in=ids)
+                .filter(content_type=ContentType.objects.get_for_model(Mailbox)) \
+                .values_list("object_id", flat=True)
+        qf = Q(pk__in=ids) & qf if qf is not None else Q(pk__in=ids)
         return self.get_queryset().select_related().filter(qf)
 
 
@@ -118,7 +114,7 @@ class Mailbox(mixins.MessageLimitMixin, AdminObject):
         return smart_text(self.full_address)
 
     def __full_address(self, localpart):
-        return "%s@%s" % (localpart, self.domain.name)
+        return f"{localpart}@{self.domain.name}"
 
     @property
     def full_address(self):
@@ -150,7 +146,7 @@ class Mailbox(mixins.MessageLimitMixin, AdminObject):
         if not admin_params.get("handle_mailboxes"):
             return None
         if self.__mail_home is None:
-            code, output = doveadm_cmd("user -f home %s" % self.full_address)
+            code, output = doveadm_cmd(f"user -f home {self.full_address}")
             if code:
                 raise lib_exceptions.InternalError(
                     _("Failed to retrieve mailbox location (%s)") % output)
@@ -167,8 +163,7 @@ class Mailbox(mixins.MessageLimitMixin, AdminObject):
             self.aliasrecipient_set.select_related("alias")
             .filter(alias__internal=False)
         )
-        aliases = [alr.alias.address for alr in qset]
-        return aliases
+        return [alr.alias.address for alr in qset]
 
     @property
     def quota_value(self):
@@ -193,13 +188,14 @@ class Mailbox(mixins.MessageLimitMixin, AdminObject):
 
     def rename_dir(self, old_mail_home):
         """Rename local directory if needed."""
-        hm = param_tools.get_global_parameter(
-            "handle_mailboxes", raise_exception=False)
-        if not hm:
+        if hm := param_tools.get_global_parameter(
+            "handle_mailboxes", raise_exception=False
+        ):
+            MailboxOperation.objects.create(
+                mailbox=self, type="rename", argument=old_mail_home
+            )
+        else:
             return
-        MailboxOperation.objects.create(
-            mailbox=self, type="rename", argument=old_mail_home
-        )
 
     def rename(self, address, domain):
         """Rename the mailbox.
@@ -224,11 +220,12 @@ class Mailbox(mixins.MessageLimitMixin, AdminObject):
         self.rename_dir(old_mail_home)
 
     def delete_dir(self):
-        hm = param_tools.get_global_parameter(
-            "handle_mailboxes", raise_exception=False)
-        if not hm:
+        if hm := param_tools.get_global_parameter(
+            "handle_mailboxes", raise_exception=False
+        ):
+            MailboxOperation.objects.create(type="delete", argument=self.mail_home)
+        else:
             return
-        MailboxOperation.objects.create(type="delete", argument=self.mail_home)
 
     def set_quota(self, value=None, override_rules=False):
         """Set or update quota value for this mailbox.
@@ -243,10 +240,7 @@ class Mailbox(mixins.MessageLimitMixin, AdminObject):
         """
         old_quota = self.quota
         if value is None:
-            if self.use_domain_quota:
-                self.quota = self.domain.default_mailbox_quota
-            else:
-                self.quota = 0
+            self.quota = self.domain.default_mailbox_quota if self.use_domain_quota else 0
         else:
             self.quota = value
         if self.quota == 0:
@@ -273,10 +267,10 @@ class Mailbox(mixins.MessageLimitMixin, AdminObject):
 
         :rtype: int
         """
-        if not self.quota:
-            return 0
-        return int(
-            self.quota_value.bytes / float(self.quota * 1048576) * 100
+        return (
+            int(self.quota_value.bytes / float(self.quota * 1048576) * 100)
+            if self.quota
+            else 0
         )
 
     def post_create(self, creator):
@@ -384,5 +378,5 @@ class MailboxOperation(models.Model):
 
     def __str__(self):
         if self.type == "rename":
-            return "Rename %s -> %s" % (self.argument, self.mailbox.mail_home)
-        return "Delete %s" % self.argument
+            return f"Rename {self.argument} -> {self.mailbox.mail_home}"
+        return f"Delete {self.argument}"

@@ -70,15 +70,17 @@ def create_domain_limits(sender, instance, **kwargs):
 @receiver(admin_signals.extra_domain_dashboard_widgets)
 def display_domain_limits(sender, user, domain, **kwargs):
     """Display resources usage for domain."""
-    if not param_tools.get_global_parameter("enable_domain_limits"):
-        return []
-    return [{
-        "column": "right",
-        "template": "limits/resources_widget.html",
-        "context": {
-            "limits": domain.domainobjectlimit_set.all()
-        }
-    }]
+    return (
+        [
+            {
+                "column": "right",
+                "template": "limits/resources_widget.html",
+                "context": {"limits": domain.domainobjectlimit_set.all()},
+            }
+        ]
+        if param_tools.get_global_parameter("enable_domain_limits")
+        else []
+    )
 
 
 @receiver(admin_signals.extra_account_dashboard_widgets)
@@ -88,16 +90,23 @@ def display_admin_limits(sender, user, account, **kwargs):
         param_tools.get_global_parameter("enable_admin_limits") and
         account.role in ["DomainAdmins", "Resellers"]
     )
-    if not condition:
-        return []
-    return [{
-        "column": "right",
-        "template": "limits/resources_widget.html",
-        "context": {
-            "limits": (
-                account.userobjectlimit_set.select_related("content_type"))
-        }
-    }]
+    return (
+        [
+            {
+                "column": "right",
+                "template": "limits/resources_widget.html",
+                "context": {
+                    "limits": (
+                        account.userobjectlimit_set.select_related(
+                            "content_type"
+                        )
+                    )
+                },
+            }
+        ]
+        if condition
+        else []
+    )
 
 
 @receiver(admin_signals.extra_account_forms)
@@ -125,9 +134,7 @@ def check_form_access(sender, account, form, **kwargs):
     """Check if form must be used for account."""
     if form["id"] != "resources":
         return True
-    if account.role not in ["Resellers", "DomainAdmins"]:
-        return False
-    return True
+    return account.role in ["Resellers", "DomainAdmins"]
 
 
 @receiver(admin_signals.get_account_form_instances)
@@ -138,9 +145,7 @@ def fill_account_instances(sender, user, account, **kwargs):
         (not user.is_superuser and user.role != "Resellers") or
         account.role not in ["Resellers", "DomainAdmins"]
     )
-    if condition:
-        return {}
-    return {"resources": account}
+    return {} if condition else {"resources": account}
 
 
 @receiver(admin_signals.extra_domain_forms)
@@ -148,12 +153,17 @@ def extra_domain_form(sender, user, domain, **kwargs):
     """Include domain limits form."""
     if not param_tools.get_global_parameter("enable_domain_limits"):
         return []
-    if not user.has_perm("admin.change_domain"):
-        return []
-    return [{
-        "id": "resources", "title": _("Resources"),
-        "cls": forms.DomainLimitsForm
-    }]
+    return (
+        [
+            {
+                "id": "resources",
+                "title": _("Resources"),
+                "cls": forms.DomainLimitsForm,
+            }
+        ]
+        if user.has_perm("admin.change_domain")
+        else []
+    )
 
 
 @receiver(admin_signals.get_domain_form_instances)
@@ -163,9 +173,7 @@ def fill_domain_instances(sender, user, domain, **kwargs):
         not param_tools.get_global_parameter("enable_domain_limits") or
         not user.has_perm("admin.change_domain")
     )
-    if condition:
-        return {}
-    return {"resources": domain}
+    return {} if condition else {"resources": domain}
 
 
 @receiver(core_signals.account_deleted)
@@ -195,15 +203,12 @@ def user_can_set_role(sender, user, role, account=None, **kwargs):
     if condition:
         return True
     lname = "domain_admins"
-    condition = (
-        user.is_superuser or
-        not user.userobjectlimit_set.get(name=lname).is_exceeded()
-    )
-    if condition:
+    if condition := (
+        user.is_superuser
+        or not user.userobjectlimit_set.get(name=lname).is_exceeded()
+    ):
         return True
-    if account is not None and account.role == role:
-        return True
-    return False
+    return account is not None and account.role == role
 
 
 @receiver(core_signals.extra_static_content)
@@ -243,10 +248,11 @@ $(document).ready(function() {
 @receiver(admin_signals.extra_admin_content)
 def display_pool_usage(sender, user, location, currentpage, **kwargs):
     """Display current usage."""
-    condition = (
-        not param_tools.get_global_parameter("enable_admin_limits") or
-        location != "leftcol" or user.is_superuser)
-    if condition:
+    if condition := (
+        not param_tools.get_global_parameter("enable_admin_limits")
+        or location != "leftcol"
+        or user.is_superuser
+    ):
         return []
     if currentpage == "identities":
         names = ["mailboxes", "mailbox_aliases"]

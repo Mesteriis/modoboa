@@ -120,9 +120,7 @@ class WizardForm(ABC):
         self.create_forms(self.request.POST)
         for step in self.steps:
             step.form.is_valid()
-        while stepid >= 0:
-            if self.steps[stepid].check_access(self):
-                break
+        while stepid >= 0 and not self.steps[stepid].check_access(self):
             stepid -= 1
         return render_to_json_response({
             "title": self.steps[stepid].title, "id": self.steps[stepid].uid,
@@ -133,18 +131,17 @@ class WizardForm(ABC):
         """Go to the next step if previous forms are valid."""
         stepid = self._get_step_id()
         self.create_forms(self.request.POST)
-        statuses = []
-        for cpt in range(0, stepid):
-            if self.steps[cpt].check_access(self):
-                statuses.append(self.steps[cpt].form.is_valid())
+        statuses = [
+            self.steps[cpt].form.is_valid()
+            for cpt in range(stepid)
+            if self.steps[cpt].check_access(self)
+        ]
         if False in statuses:
             return render_to_json_response({
                 "stepid": stepid, "id": self.steps[stepid - 1].uid,
                 "form_errors": self.errors
             }, status=400)
-        while stepid < len(self.steps):
-            if self.steps[stepid].check_access(self):
-                break
+        while stepid < len(self.steps) and not self.steps[stepid].check_access(self):
             stepid += 1
         if stepid == len(self.steps):
             return self.done()
@@ -212,11 +209,9 @@ class DynamicForm(object):
         :param typ: a form field class
         """
         expr = re.compile(r'%s_\d+' % pattern)
-        values = []
-        for k, v in list(qdict.items()):
-            if k == pattern or expr.match(k):
-                values.append((k, v))
-
+        values = [
+            (k, v) for k, v in list(qdict.items()) if k == pattern or expr.match(k)
+        ]
         ndata = self.data.copy()
         values.reverse()
         for v in values:
@@ -251,11 +246,12 @@ class TabForms(object):
                 args.append(request.POST)
             if instances is not None:
                 self.instances = instances
-                mname = "check_%s" % fd["id"]
-                if hasattr(self, mname):
-                    if not getattr(self, mname)(instances[fd["id"]]):
-                        to_remove += [fd]
-                        continue
+                mname = f'check_{fd["id"]}'
+                if hasattr(self, mname) and not getattr(self, mname)(
+                    instances[fd["id"]]
+                ):
+                    to_remove += [fd]
+                    continue
                 kwargs["instance"] = instances[fd["id"]]
             if classes is not None and fd["id"] in classes:
                 fd["instance"] = classes[fd["id"]](*args, **kwargs)
@@ -321,8 +317,7 @@ class TabForms(object):
         return self.forward()
 
     def forward(self):
-        for form in self.forms:
-            yield form
+        yield from self.forms
 
     def extra_context(self, context):
         """"Provide additional information to template's context.
@@ -350,10 +345,10 @@ class TabForms(object):
             "tabs": self,
         }
         if self.forms:
-            context.update({
+            context |= {
                 "action_label": _("Update"),
                 "action_classes": "submit",
-            })
+            }
         self.extra_context(context)
         active_tab_id = self.request.GET.get("active_tab", "default")
         if active_tab_id != "default":
@@ -391,12 +386,12 @@ class YesNoField(TypedChoiceField):
 
     def __init__(self, *args, **kwargs):
         """Constructor."""
-        kwargs.update({
+        kwargs |= {
             "choices": (
                 (True, ugettext_lazy("Yes")),
-                (False, ugettext_lazy("No"))
+                (False, ugettext_lazy("No")),
             ),
             "widget": HorizontalRadioSelect(),
-            "coerce": lambda x: x == "True"
-        })
+            "coerce": lambda x: x == "True",
+        }
         super(YesNoField, self).__init__(*args, **kwargs)

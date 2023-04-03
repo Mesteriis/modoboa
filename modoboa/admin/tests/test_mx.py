@@ -111,9 +111,10 @@ class MXTestCase(ModoTestCase):
         domain = factories.DomainFactory(name="invalid-mx.com")
         # Add domain admin with mailbox
         mb = factories.MailboxFactory(
-            address="admin", domain=domain,
-            user__username="admin@{}".format(domain.name),
-            user__groups=("DomainAdmins", )
+            address="admin",
+            domain=domain,
+            user__username=f"admin@{domain.name}",
+            user__groups=("DomainAdmins",),
         )
         domain.add_admin(mb.user)
         management.call_command(

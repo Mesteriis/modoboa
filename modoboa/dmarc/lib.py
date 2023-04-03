@@ -55,8 +55,7 @@ def import_record(xml_node, report):
     record.disposition = policy_evaluated.find("disposition").text
     record.dkim_result = policy_evaluated.find("dkim").text
     record.spf_result = policy_evaluated.find("spf").text
-    reason = policy_evaluated.find("reason")
-    if reason:
+    if reason := policy_evaluated.find("reason"):
         record.reason_type = smart_text(reason.find("type").text)[:14]
         if record.reason_type not in constants.ALLOWED_REASON_TYPES:
             record.reason_type = "other"
@@ -80,12 +79,10 @@ def import_record(xml_node, report):
     record.save()
     auth_results = xml_node.find("auth_results")
     for rtype in ["spf", "dkim"]:
-        rnode = auth_results.find(rtype)
-        if not rnode:
-            continue
-        models.Result.objects.create(
-            record=record, type=rtype, domain=rnode.find("domain").text,
-            result=rnode.find("result").text)
+        if rnode := auth_results.find(rtype):
+            models.Result.objects.create(
+                record=record, type=rtype, domain=rnode.find("domain").text,
+                result=rnode.find("result").text)
 
 
 @transaction.atomic
@@ -94,9 +91,7 @@ def import_report(content):
     root = fromstring(content, forbid_dtd=True)
     metadata = root.find("report_metadata")
     print(
-        "Importing report {} received from {}".format(
-            metadata.find("report_id").text,
-            metadata.find("org_name").text)
+        f'Importing report {metadata.find("report_id").text} received from {metadata.find("org_name").text}'
     )
     reporter, created = models.Reporter.objects.get_or_create(
         email=metadata.find("email").text,
@@ -127,7 +122,7 @@ def import_report(content):
             else:
                 print(f"Report skipped because of malformed data (empty {attr})")
                 return
-        value = setattr(report, "policy_{}".format(attr), node.text)
+        value = setattr(report, f"policy_{attr}", node.text)
     try:
         report.save()
     except (pytz.exceptions.AmbiguousTimeError):
@@ -219,10 +214,8 @@ def week_range(year, weeknumber):
     """Return start and end dates of a given week."""
     tz = timezone.get_current_timezone()
     fmt = "%Y-%W-%w"
-    start_week = datetime.datetime.strptime(
-        "{}-{}-{}".format(year, weeknumber, 1), fmt)
-    end_week = datetime.datetime.strptime(
-        "{}-{}-{}".format(year, weeknumber, 0), fmt)
+    start_week = datetime.datetime.strptime(f"{year}-{weeknumber}-1", fmt)
+    end_week = datetime.datetime.strptime(f"{year}-{weeknumber}-0", fmt)
     return tz.localize(start_week), tz.localize(end_week)
 
 
@@ -239,7 +232,7 @@ def insert_record(target: dict, record, name: str) -> None:
         }
     target[name][record.source_ip]["total"] += record.count
     for typ in ["spf", "dkim"]:
-        result = getattr(record, "{}_result".format(typ))
+        result = getattr(record, f"{typ}_result")
         key = "success" if result == "pass" else "failure"
         target[name][record.source_ip][typ][key] += record.count
 
@@ -292,8 +285,7 @@ def get_aligment_stats(domain, period=None) -> dict:
 
         ips = (r.source_ip for r in all_records)
         with concurrent.futures.ThreadPoolExecutor(max_workers=16) as pool:
-            dns_names = {i: n for (i, n) in
-                         list(pool.map(get_domain_name_from_ip, ips))}
+            dns_names = dict(list(pool.map(get_domain_name_from_ip, ips)))
 
     for record in all_records:
         name = dns_names.get(record.source_ip, _("Not resolved"))

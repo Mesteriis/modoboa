@@ -59,12 +59,17 @@ class ResourceTestCase(lib_tests.ModoTestCase):
     def _create_account(
             self, username, role="SimpleUsers", status=200, **kwargs):
         values = {
-            "username": username, "first_name": "Tester", "last_name": "Toto",
-            "password1": "Toto1234", "password2": "Toto1234", "role": role,
-            "quota_act": True, "is_active": True, "email": username,
-            "stepid": "step2"
-        }
-        values.update(kwargs)
+            "username": username,
+            "first_name": "Tester",
+            "last_name": "Toto",
+            "password1": "Toto1234",
+            "password2": "Toto1234",
+            "role": role,
+            "quota_act": True,
+            "is_active": True,
+            "email": username,
+            "stepid": "step2",
+        } | kwargs
         return self.ajax_post(
             reverse("admin:account_add"), values, status
         )
@@ -84,16 +89,13 @@ class ResourceTestCase(lib_tests.ModoTestCase):
             "create_aliases": False, "stepid": "step3", "type": "domain"
         }
         if withtpl:
-            values.update({
+            values |= {
                 "create_dom_admin": True,
                 "dom_admin_username": "admin",
-                "create_aliases": True
-            })
-        values.update(kwargs)
-        response = self.ajax_post(
-            reverse("admin:domain_add"), values, status
-        )
-        return response
+                "create_aliases": True,
+            }
+        values |= kwargs
+        return self.ajax_post(reverse("admin:domain_add"), values, status)
 
     def _domain_alias_operation(self, optype, domain, name, status=200):
         dom = Domain.objects.get(name=domain)
@@ -108,7 +110,7 @@ class ResourceTestCase(lib_tests.ModoTestCase):
         else:
             aliases.remove(name)
         for cpt, alias in enumerate(aliases):
-            fname = "aliases" if not cpt else "aliases_%d" % cpt
+            fname = "aliases_%d" % cpt if cpt else "aliases"
             values[fname] = alias
         self.ajax_post(
             reverse("admin:domain_change", args=[dom.id]),

@@ -60,11 +60,7 @@ class Command(BaseCommand):
             try:
                 extension.load_initial_data()
             except Exception as e:
-                self.stderr.write(
-                    "Unable to load initial data for '{}' ({}).".format(
-                        extname, str(e)
-                    )
-                )
+                self.stderr.write(f"Unable to load initial data for '{extname}' ({str(e)}).")
             else:
                 signals.initial_data_loaded.send(
                     sender=self.__class__, extname=extname

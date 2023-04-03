@@ -25,10 +25,7 @@ def rename_view_permissions(apps, schema_editor):
                 perm.save()
         except IntegrityError:
             print(
-                (
-                    "Unable to rename '{}' to '{}', a permission with this "
-                    "codename already exists.".format(codename, perm.codename)
-                ),
+                f"Unable to rename '{codename}' to '{perm.codename}', a permission with this codename already exists.",
                 file=sys.stderr,
             )
 

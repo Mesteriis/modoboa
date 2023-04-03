@@ -18,16 +18,15 @@ def render_form(form, tpl=None):
     if tpl is not None:
         return render_to_string(tpl, {"form": form})
 
-    ret = ""
-    for field in form:
-        ret += "%s\n" % render_field(field)
+    ret = "".join("%s\n" % render_field(field) for field in form)
     return mark_safe(ret)
 
 
 def configure_field_classes(field):
     """Add required CSS classes to field."""
-    if isinstance(field.field.widget, forms.CheckboxInput) or \
-       isinstance(field.field.widget, forms.RadioSelect):
+    if isinstance(
+        field.field.widget, (forms.CheckboxInput, forms.RadioSelect)
+    ):
         return
     if "class" in field.field.widget.attrs:
         field.field.widget.attrs["class"] += " form-control"
@@ -43,13 +42,14 @@ def render_field(
     from modoboa.core.templatetags.core_tags import visirule
 
     if isinstance(field.field, SeparatorField):
-        return "<h5%s>%s</h5>" % (visirule(field), smart_text(field.label))
+        return f"<h5{visirule(field)}>{smart_text(field.label)}</h5>"
     configure_field_classes(field)
     context = {
-        "field": field, "help_display_mode": help_display_mode,
-        "label_width": label_width, "deactivate_if_empty": True
-    }
-    context.update(options)
+        "field": field,
+        "help_display_mode": help_display_mode,
+        "label_width": label_width,
+        "deactivate_if_empty": True,
+    } | options
     return render_to_string("common/generic_field.html", context)
 
 

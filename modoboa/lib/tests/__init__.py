@@ -107,7 +107,7 @@ class ModoAPITestCase(ParametersMixin, APITestCase):
     def setUp(self):
         """Setup."""
         super(ModoAPITestCase, self).setUp()
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + self.token.key)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
         self.workdir = tempfile.mkdtemp()
         self.set_global_parameter("storage_dir", self.workdir, app="pdfcredentials")
 

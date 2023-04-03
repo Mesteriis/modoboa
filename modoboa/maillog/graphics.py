@@ -37,13 +37,12 @@ class Curve:
         :return: a list
         """
         rrdfile = os.path.join(
-            param_tools.get_global_parameter("rrd_rootdir"), "%s.rrd" % rrdfile
+            param_tools.get_global_parameter("rrd_rootdir"), f"{rrdfile}.rrd"
         )
         return [
-            'DEF:%s=%s:%s:%s' %
-            (self.dsname, rrdfile, self.dsname, self.cfunc),
+            f'DEF:{self.dsname}={rrdfile}:{self.dsname}:{self.cfunc}',
             'CDEF:%(ds)spm=%(ds)s,UN,0,%(ds)s,IF,60,*' % {"ds": self.dsname},
-            'XPORT:%spm:"%s"' % (self.dsname, self.legend)
+            f'XPORT:{self.dsname}pm:"{self.legend}"',
         ]
 
 
@@ -105,8 +104,7 @@ class Graphic:
             cmdargs += curve.to_rrd_command_args(rrdfile)
         code = 0
 
-        cmd = "{} xport --json -t --start {} --end {} ".format(
-            self.rrdtool_binary, str(start), str(end))
+        cmd = f"{self.rrdtool_binary} xport --json -t --start {str(start)} --end {str(end)} "
         cmd += " ".join(cmdargs)
         code, output = exec_cmd(smart_bytes(cmd))
         if code:
@@ -154,14 +152,14 @@ class GraphicSet(object):
         return self.file_name
 
     def export(self, rrdfile, start, end, graphic=None):
-        result = {}
-        for graph in self.graphics:
-            if graphic is None or graphic == graph.display_name:
-                result[graph.display_name] = {
-                    "title": str(graph.title),
-                    "series": graph.export(rrdfile, start, end)
-                }
-        return result
+        return {
+            graph.display_name: {
+                "title": str(graph.title),
+                "series": graph.export(rrdfile, start, end),
+            }
+            for graph in self.graphics
+            if graphic is None or graphic == graph.display_name
+        }
 
 
 class AverageTraffic(Graphic):
@@ -221,12 +219,10 @@ class MailTraffic(GraphicSet):
 
         :return: a domain name (str) or None.
         """
-        if pattern in [None, "global"]:
+        if pattern is None or pattern == "global":
             if not user.is_superuser:
                 domains = admin_models.Domain.objects.get_for_admin(user)
-                if not domains.exists():
-                    return None
-                return domains.first().name
+                return domains.first().name if domains.exists() else None
             return "global"
 
         results = list(

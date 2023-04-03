@@ -31,31 +31,25 @@ class Page(object):
     def has_previous(self):
         """Tell if a previous page is available or not."""
         if self._has_previous is None:
-            self._has_previous = True if self.number > 1 else False
+            self._has_previous = self.number > 1
         return self._has_previous
 
     @property
     def previous_page_number(self):
         """Return the index of the previous page."""
-        if not self.has_previous:
-            return False
-        return self.number - 1
+        return self.number - 1 if self.has_previous else False
 
     @property
     def has_next(self):
         """Tell if a next page is available or not."""
         if self._has_next is None:
-            self._has_next = (
-                True if self.id_stop < self.paginator.total else False
-            )
+            self._has_next = self.id_stop < self.paginator.total
         return self._has_next
 
     @property
     def next_page_number(self):
         """Return the index of the next page."""
-        if not self.has_next:
-            return False
-        return self.number + 1
+        return self.number + 1 if self.has_next else False
 
     @property
     def last_page(self):
@@ -90,9 +84,8 @@ class Paginator(object):
         if page_id < 1:
             return None
         id_start, id_stop = self._indexes(page_id - 1)
-        if id_start <= self.total:
-            if id_stop >= self.total:
-                id_stop = self.total
-        else:
+        if id_start > self.total:
             return None
+        if id_stop >= self.total:
+            id_stop = self.total
         return Page(self, page_id, id_start, id_stop)

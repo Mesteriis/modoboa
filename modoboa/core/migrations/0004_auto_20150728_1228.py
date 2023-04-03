@@ -1,6 +1,8 @@
 from django.db import models, migrations
 
 
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -35,11 +37,14 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='user',
             name='master_user',
-            field=models.BooleanField(default=False, help_text='Allow this administrator to access user mailboxes', verbose_name='Allow mailboxes access'),
+            field=models.BooleanField(
+                default=False,
+                help_text='Allow this administrator to access user mailboxes',
+                verbose_name='Allow mailboxes access',
+            ),
             preserve_default=True,
         ),
         migrations.AlterIndexTogether(
-            name='user',
-            index_together=set([('email', 'is_active')]),
+            name='user', index_together={('email', 'is_active')}
         ),
     ]

@@ -87,8 +87,7 @@ class DomainViewSetTestCase(ModoAPITestCase):
         )
 
     def test_delete(self):
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Token " + self.da_token.key)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.da_token.key}")
 
         domain = models.Domain.objects.get(name="test2.com")
         url = reverse("v2:domain-delete", args=[domain.pk])
@@ -100,7 +99,7 @@ class DomainViewSetTestCase(ModoAPITestCase):
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 403)
 
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + self.token.key)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
         url = reverse("v2:domain-delete", args=[domain.pk])
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 204)
@@ -436,8 +435,7 @@ class UserAccountViewSetTestCase(ModoAPITestCase):
         cls.da_token = Token.objects.create(user=cls.da)
 
     def test_forward(self):
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Token " + self.da_token.key)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.da_token.key}")
         url = reverse("v2:account-forward")
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
@@ -494,8 +492,7 @@ class AlarmViewSetTestCase(ModoAPITestCase):
         domain = models.Domain.objects.get(name="test.com")
 
         # Try performing action on restricted domains
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Token " + self.da_token.key)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.da_token.key}")
         domain = models.Domain.objects.get(name="test2.com")
         alarm_restricted = models.Alarm.objects.create(
             domain=domain, mailbox=None, title="Test alarm 2")
@@ -508,7 +505,7 @@ class AlarmViewSetTestCase(ModoAPITestCase):
         self.assertEqual(resp.status_code, 404)
 
         # Perform actions as SuperAdmin
-        self.client.credentials(HTTP_AUTHORIZATION="Token " + self.token.key)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
 
         alarm = models.Alarm.objects.create(
             domain=domain, mailbox=None, title="Test alarm 3")

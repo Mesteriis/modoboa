@@ -27,27 +27,27 @@ def viewsettings(request, tplname="core/settings_header.html"):
 @user_passes_test(lambda u: u.is_superuser)
 def parameters(request, tplname="core/parameters.html"):
     """View to display and save global parameters."""
-    if request.method == "POST":
-        forms = param_tools.registry.get_forms(
-            "global", request.POST, localconfig=request.localconfig)
-        for formdef in forms:
-            form = formdef["form"]
-            if form.is_valid():
-                form.save()
-                form.to_django_settings()
-                continue
-            return render_to_json_response(
-                {"form_errors": form.errors, "prefix": form.app}, status=400
-            )
-        request.localconfig.save()
-        return render_to_json_response(_("Parameters saved"))
-    return render_to_json_response({
-        "left_selection": "parameters",
-        "content": render_to_string(tplname, {
-            "forms": param_tools.registry.get_forms(
-                "global", localconfig=request.localconfig)
-        }, request)
-    })
+    if request.method != "POST":
+        return render_to_json_response({
+            "left_selection": "parameters",
+            "content": render_to_string(tplname, {
+                "forms": param_tools.registry.get_forms(
+                    "global", localconfig=request.localconfig)
+            }, request)
+        })
+    forms = param_tools.registry.get_forms(
+        "global", request.POST, localconfig=request.localconfig)
+    for formdef in forms:
+        form = formdef["form"]
+        if form.is_valid():
+            form.save()
+            form.to_django_settings()
+            continue
+        return render_to_json_response(
+            {"form_errors": form.errors, "prefix": form.app}, status=400
+        )
+    request.localconfig.save()
+    return render_to_json_response(_("Parameters saved"))
 
 
 @login_required
@@ -70,11 +70,10 @@ def get_logs_page(request, page_id=None):
     )
     if page_id is None:
         page_id = request.GET.get("page", None)
-        if page_id is None:
-            return None
+    if page_id is None:
+        return None
     return get_listing_page(
-        Log.objects.all().order_by("%s%s" % (sort_dir, sort_order)),
-        page_id
+        Log.objects.all().order_by(f"{sort_dir}{sort_order}"), page_id
     )
 
 

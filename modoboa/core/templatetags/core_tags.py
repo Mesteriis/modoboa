@@ -34,12 +34,13 @@ def core_menu(selection, user):
              "label": _("Modoboa"),
              "url": reverse("core:index")}
         ]
-    if not len(entries):
-        return ""
-    return render_to_string("common/menulist.html", {
-        "entries": entries,
-        "selection": selection,
-        "user": user}
+    return (
+        render_to_string(
+            "common/menulist.html",
+            {"entries": entries, "selection": selection, "user": user},
+        )
+        if len(entries)
+        else ""
     )
 
 
@@ -154,7 +155,7 @@ def colorize_level(level):
     }
     if level not in classes:
         return level
-    return "<p class='%s'>%s</p>" % (classes[level], level)
+    return f"<p class='{classes[level]}'>{level}</p>"
 
 
 @register.filter
@@ -171,8 +172,8 @@ def visirule(field):
         return ""
     rule = field.form.visirules[field.html_name]
     return mark_safe(
-        " data-visibility-field='{}' data-visibility-value='{}' "
-        .format(rule["field"], rule["value"]))
+        f""" data-visibility-field='{rule["field"]}' data-visibility-value='{rule["value"]}' """
+    )
 
 
 @register.simple_tag
@@ -191,8 +192,7 @@ class ConnectedUsers(template.Node):
         # Build a list of user ids from that query
         for session in sessions:
             data = session.get_decoded()
-            uid = data.get("_auth_user_id", None)
-            if uid:
+            if uid := data.get("_auth_user_id", None):
                 uid_list.append(uid)
 
         # Query all logged in users based on id list
@@ -262,6 +262,4 @@ def display_messages(msgs):
 def currencyfmt(amount):
     """Simple temp. filter to replace babel."""
     lang = get_language()
-    if lang == "fr":
-        return u"{} €".format(amount)
-    return u"€{}".format(amount)
+    return f"{amount} €" if lang == "fr" else f"€{amount}"

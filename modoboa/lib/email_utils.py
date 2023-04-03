@@ -31,7 +31,7 @@ class EmailAddress(object):
     def __init__(self, address):
         self.name, self.address = u2u_decode.decode_address(address)
         if self.name:
-            self.fulladdress = "{} <{}>".format(self.name, self.address)
+            self.fulladdress = f"{self.name} <{self.address}>"
         else:
             self.fulladdress = self.address
 
@@ -117,34 +117,34 @@ class Email(object):
     def body(self):
         if self._body is None:
             self._parse(self.msg)
-            self._body = getattr(self, "viewmail_%s" % self.dformat)()
+            self._body = getattr(self, f"viewmail_{self.dformat}")()
 
         return self._body
 
     def get_header(self, msg, header):
         # msg parameter to maintain compatibility with
         # modoboa_webmail.lib.imapemail.ImapEmail
-        if header in msg:
-            decoded_values = []
-            for value, encoding in email.header.decode_header(msg[header]):
-                if not len(value):
-                    continue
-                if encoding:
-                    value = smart_text(value, encoding=encoding)
-                elif isinstance(value, bytes):
-                    # SMTPUTF8 fallback (most of the time)
-                    # Address contains non ASCII chars but is not RFC2047
-                    # encoded...
-                    encoding = chardet.detect(value)
-                    try:
-                        value = value.decode(encoding["encoding"], "replace")
-                    except (TypeError, UnicodeDecodeError) as exc:
-                        raise InternalError(
-                            _("unable to determine encoding of string")
-                        ) from exc
-                decoded_values.append(value)
-            return "".join(decoded_values)
-        return ""
+        if header not in msg:
+            return ""
+        decoded_values = []
+        for value, encoding in email.header.decode_header(msg[header]):
+            if not len(value):
+                continue
+            if encoding:
+                value = smart_text(value, encoding=encoding)
+            elif isinstance(value, bytes):
+                # SMTPUTF8 fallback (most of the time)
+                # Address contains non ASCII chars but is not RFC2047
+                # encoded...
+                encoding = chardet.detect(value)
+                try:
+                    value = value.decode(encoding["encoding"], "replace")
+                except (TypeError, UnicodeDecodeError) as exc:
+                    raise InternalError(
+                        _("unable to determine encoding of string")
+                    ) from exc
+            decoded_values.append(value)
+        return "".join(decoded_values)
 
     def _fetch_message(self):
         raise NotImplementedError()
@@ -221,8 +221,9 @@ class Email(object):
             # Duplicate Content-ID
             return
 
-        self._images[cid] = "data:%s;base64,%s" % (
-            content_type, "".join(msg.get_payload().splitlines(False)))
+        self._images[
+            cid
+        ] = f'data:{content_type};base64,{"".join(msg.get_payload().splitlines(False))}'
 
     def _post_process_plain(self, content):
         mail_text = (
@@ -270,7 +271,7 @@ class Email(object):
             contents = self.contents["plain"]
         else:
             contents = conditional_escape(contents)
-        return "<pre>%s</pre>" % contents
+        return f"<pre>{contents}</pre>"
 
     def viewmail_html(self, contents=None, **kwargs):
         # contents and **kwargs parameters to maintain compatibility with
@@ -383,9 +384,7 @@ def prepare_addresses(addresses, usage="header"):
             result.append(formataddr((name, address)))
         else:
             result.append(address)
-    if usage == "header":
-        return ",".join(result)
-    return result
+    return ",".join(result) if usage == "header" else result
 
 
 def set_email_headers(msg, subject, sender, rcpt):
@@ -399,8 +398,9 @@ def set_email_headers(msg, subject, sender, rcpt):
     msg["From"] = sender
     msg["To"] = prepare_addresses(rcpt)
     msg["Message-ID"] = make_msgid()
-    msg["User-Agent"] = "Modoboa %s" % \
-        (pkg_resources.get_distribution("modoboa").version)
+    msg[
+        "User-Agent"
+    ] = f'Modoboa {pkg_resources.get_distribution("modoboa").version}'
     msg["Date"] = formatdate(time.time(), True)
 
 
@@ -422,7 +422,7 @@ def _sendmail(sender, rcpt, msgstring, server="localhost", port=25):
         s.sendmail(sender, [rcpt], msgstring)
         s.quit()
     except smtplib.SMTPException as e:
-        return False, "SMTP error: %s" % str(e)
+        return False, f"SMTP error: {str(e)}"
     return True, None
 
 

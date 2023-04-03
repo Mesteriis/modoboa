@@ -192,9 +192,7 @@ class AccountViewSetTestCase(ModoAPITestCase):
         }
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Bearer {}".format(resp.json()["access"])
-        )
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {resp.json()["access"]}')
 
         url = reverse("v2:account-manage-api-token")
         resp = self.client.get(url)
@@ -429,8 +427,7 @@ class AuthenticationTestCase(ModoAPITestCase):
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Bearer {}".format(resp.json()["access"]))
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {resp.json()["access"]}')
         resp = self.client.get(me_url)
         self.assertEqual(resp.status_code, 200)
 
@@ -449,8 +446,7 @@ class AuthenticationTestCase(ModoAPITestCase):
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, 200)
 
-        self.client.credentials(
-            HTTP_AUTHORIZATION="Bearer {}".format(resp.json()["access"]))
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {resp.json()["access"]}')
         resp = self.client.get(me_url)
         self.assertEqual(resp.status_code, 200)
 

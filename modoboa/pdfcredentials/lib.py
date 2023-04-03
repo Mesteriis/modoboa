@@ -39,7 +39,7 @@ def init_storage_dir():
 def get_creds_filename(account):
     """Return the full path of a document."""
     storage_dir = param_tools.get_global_parameter("storage_dir")
-    return os.path.join(storage_dir, account.username + ".pdf")
+    return os.path.join(storage_dir, f"{account.username}.pdf")
 
 
 def delete_credentials(account):
@@ -104,9 +104,7 @@ def get_document_logo():
         logo = os.path.join(settings.MEDIA_ROOT, os.path.basename(logo))
     except AttributeError:
         logo = os.path.join(settings.STATIC_ROOT, "css/modoboa-new.png")
-    if not os.path.isfile(logo):
-        return None
-    return logo
+    return logo if os.path.isfile(logo) else None
 
 
 def rfc_6266_content_disposition(filename):
@@ -118,5 +116,5 @@ def rfc_6266_content_disposition(filename):
             filename.replace("\\", "\\\\").replace('"', r"\"")
         )
     except UnicodeEncodeError:
-        file_expr = "filename*=utf-8''{}".format(quote(filename))
+        file_expr = f"filename*=utf-8''{quote(filename)}"
     return f"attachment; {file_expr}"

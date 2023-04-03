@@ -24,9 +24,7 @@ class ModoExtension(object):
 
     def get_url(self):
         """Return extension base url."""
-        if self.url is None:
-            return self.name
-        return self.url
+        return self.name if self.url is None else self.url
 
     def infos(self):
         """Information about this extension."""
@@ -71,9 +69,7 @@ class ExtensionsPool(object):
     def get_extension_infos(self, name):
         """Return information about the specified extension."""
         instance = self.get_extension(name)
-        if instance is None:
-            return None
-        return instance.infos()
+        return None if instance is None else instance.infos()
 
     def load_extension(self, name):
         """Load a registered extension."""
@@ -107,7 +103,7 @@ class ExtensionsPool(object):
                 root = ""
                 pattern = "{}.urls_api"
             else:
-                root = r"^{}/".format(ext.get_url())
+                root = f"^{ext.get_url()}/"
                 pattern = "{}.urls"
             try:
                 result.append(

@@ -53,9 +53,7 @@ class ObjectLimitMixin(object):
 
     def __str__(self):
         """Display current usage."""
-        if self.max_value == -1:
-            return _("unlimited")
-        return "{}%".format(self.usage)
+        return _("unlimited") if self.max_value == -1 else f"{self.usage}%"
 
 
 class UserObjectLimit(ObjectLimitMixin, models.Model):
@@ -73,10 +71,14 @@ class UserObjectLimit(ObjectLimitMixin, models.Model):
     @property
     def definition(self):
         """Return the definition of this limit."""
-        for name, tpl in utils.get_user_limit_templates():
-            if name == self.name:
-                return tpl
-        return None
+        return next(
+            (
+                tpl
+                for name, tpl in utils.get_user_limit_templates()
+                if name == self.name
+            ),
+            None,
+        )
 
     @property
     def current_value(self) -> int:
@@ -96,10 +98,11 @@ class UserObjectLimit(ObjectLimitMixin, models.Model):
             return model_class.objects.filter(
                 pk__in=id_list, **self.definition["extra_filters"]).count()
         qset = model_class.objects.filter(pk__in=id_list)
-        if not qset.exists():
-            return 0
-        return qset.aggregate(
-            total=models.Sum(self.definition["field"]))["total"]
+        return (
+            qset.aggregate(total=models.Sum(self.definition["field"]))["total"]
+            if qset.exists()
+            else 0
+        )
 
     @property
     def label(self):
@@ -117,9 +120,7 @@ class UserObjectLimit(ObjectLimitMixin, models.Model):
 
     def __str__(self):
         """Display current usage."""
-        if self.max_value == -1:
-            return _("unlimited")
-        return "{}%".format(self.usage)
+        return _("unlimited") if self.max_value == -1 else f"{self.usage}%"
 
 
 class DomainObjectLimit(ObjectLimitMixin, models.Model):
@@ -135,17 +136,21 @@ class DomainObjectLimit(ObjectLimitMixin, models.Model):
     @property
     def definition(self):
         """Return the definition of this limit."""
-        for name, tpl in utils.get_domain_limit_templates():
-            if name == self.name:
-                return tpl
-        return None
+        return next(
+            (
+                tpl
+                for name, tpl in utils.get_domain_limit_templates()
+                if name == self.name
+            ),
+            None,
+        )
 
     @property
     def current_value(self) -> int:
         """Return the current number of objects."""
         definition = self.definition
         if not definition:
-            raise RuntimeError("Bad limit {}".format(self.name))
+            raise RuntimeError(f"Bad limit {self.name}")
         relation = getattr(self.domain, definition["relation"])
         if "extra_filters" in definition:
             relation = relation.filter(**definition["extra_filters"])

@@ -215,10 +215,8 @@ class CoreGlobalParametersSerializer(serializers.Serializer):
         """
         errors = {}
         if data["sms_password_recovery"]:
-            provider = data.get("sms_provider")
-            if provider:
-                sms_settings = sms_backends.get_backend_settings(provider)
-                if sms_settings:
+            if provider := data.get("sms_provider"):
+                if sms_settings := sms_backends.get_backend_settings(provider):
                     for name in sms_settings.keys():
                         if not data.get(name):
                             errors[name] = _("This field is required")
@@ -311,7 +309,7 @@ class PasswordRecoveryEmailSerializer(serializers.Serializer):
             'token': default_token_generator.make_token(user),
             'protocol': 'https',
         }
-        context.update(context_processors.new_admin_url())
+        context |= context_processors.new_admin_url()
         subject = loader.render_to_string(
             "registration/password_reset_subject.txt", context)
         # Email subject *must not* contain newlines
@@ -325,8 +323,7 @@ def send_sms_code(secret, backend, user):
     """ Send a sms containing a TOTP code for password reset. """
     code = oath.totp(secret)
     text = _(
-        "Please use the following code to recover your Modoboa password: {}"
-        .format(code)
+        f"Please use the following code to recover your Modoboa password: {code}"
     )
     if not backend.send(text, [str(user.phone_number)]):
         raise NoSMSAvailable()

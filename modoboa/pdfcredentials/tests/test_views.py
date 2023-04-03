@@ -50,7 +50,7 @@ class EventsTestCase(ModoTestCase):
     def test_password_updated(self):
         """Check that document is generated at account creation/update."""
         values = self._create_account("leon@test.com")
-        fname = os.path.join(self.workdir, "{}.pdf".format(values["username"]))
+        fname = os.path.join(self.workdir, f'{values["username"]}.pdf')
         self.assertTrue(os.path.exists(fname))
         account = core_models.User.objects.get(username=values["username"])
 
@@ -91,20 +91,20 @@ class EventsTestCase(ModoTestCase):
         """Add connection settings to documents."""
         self.set_global_parameter("include_connection_settings", True)
         values = self._create_account("leon@test.com")
-        fname = os.path.join(self.workdir, "{}.pdf".format(values["username"]))
+        fname = os.path.join(self.workdir, f'{values["username"]}.pdf')
         self.assertTrue(os.path.exists(fname))
 
     def test_with_custom_message(self):
         """Add custom message to documents."""
         self.set_global_parameter("custom_message", "This is a test message.")
         values = self._create_account("leon@test.com")
-        fname = os.path.join(self.workdir, "{}.pdf".format(values["username"]))
+        fname = os.path.join(self.workdir, f'{values["username"]}.pdf')
         self.assertTrue(os.path.exists(fname))
 
     def test_account_delete(self):
         """Check that document is deleted with account."""
         values = self._create_account("leon@test.com")
-        fname = os.path.join(self.workdir, "{}.pdf".format(values["username"]))
+        fname = os.path.join(self.workdir, f'{values["username"]}.pdf')
         self.assertTrue(os.path.exists(fname))
         account = core_models.User.objects.get(username=values["username"])
         self.ajax_post(
@@ -116,13 +116,13 @@ class EventsTestCase(ModoTestCase):
     def test_with_custom_logo(self):
         """Check that document is deleted with account."""
         values = self._create_account("leon@test.com")
-        fname = os.path.join(self.workdir, "{}.pdf".format(values["username"]))
+        fname = os.path.join(self.workdir, f'{values["username"]}.pdf')
         self.assertTrue(os.path.exists(fname))
 
     def test_download_and_delete_account(self):
         """Check that document is deleted with account."""
         values = self._create_account("leon@test.com")
-        fname = os.path.join(self.workdir, "{}.pdf".format(values["username"]))
+        fname = os.path.join(self.workdir, f'{values["username"]}.pdf')
         self.assertTrue(os.path.exists(fname))
         account = core_models.User.objects.get(username=values["username"])
 

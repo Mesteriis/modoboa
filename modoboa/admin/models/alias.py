@@ -32,9 +32,10 @@ def validate_alias_address(address, creator, internal=False, instance=None):
         raise ValidationError(_("Domain not found."))
     if not creator.can_access(domain):
         raise ValidationError(_("Permission denied."))
-    if not instance or instance.address != address:
-        if Alias.objects.filter(address=address, internal=internal).exists():
-            raise ValidationError(_("An alias with this name already exists."))
+    if (not instance or instance.address != address) and Alias.objects.filter(
+        address=address, internal=internal
+    ).exists():
+        raise ValidationError(_("An alias with this name already exists."))
     if instance is None:
         try:
             # Check creator limits
@@ -114,9 +115,7 @@ class Alias(AdminObject):
         if not rcpts_count:
             return "---"
         rcpts = self.recipients
-        if rcpts_count > 1:
-            return "%s, ..." % rcpts[0]
-        return rcpts[0]
+        return f"{rcpts[0]}, ..." if rcpts_count > 1 else rcpts[0]
 
     @property
     def type(self):
@@ -155,26 +154,19 @@ class Alias(AdminObject):
             local_part, domname, extension = (
                 split_mailbox(address, return_extension=True))
             if domname is None:
-                raise BadRequest(
-                    u"%s %s" % (_("Invalid address"), address)
-                )
+                raise BadRequest(f'{_("Invalid address")} {address}')
             domain = Domain.objects.filter(name=domname).first()
             kwargs = {"address": address, "alias": self}
-            if (
-                (domain is not None) and
-                (
-                    any(
-                        r[1] for r in signals.use_external_recipients.send(
-                            self, recipients=address)
-                    ) is False
+            if domain is not None and not any(
+                r[1]
+                for r in signals.use_external_recipients.send(
+                    self, recipients=address
                 )
             ):
                 rcpt = Mailbox.objects.filter(
                     domain=domain, address=local_part).first()
                 if rcpt is None:
-                    rcpt = Alias.objects.filter(
-                        address="%s@%s" % (local_part, domname)
-                    ).first()
+                    rcpt = Alias.objects.filter(address=f"{local_part}@{domname}").first()
                     if rcpt is None:
                         raise NotFound(
                             _("Local recipient {}@{} not found")
@@ -258,6 +250,4 @@ class AliasRecipient(models.Model):
 
     def __str__(self):
         """Return alias and recipient."""
-        return smart_text(
-            "{} -> {}".format(self.alias.address, self.address)
-        )
+        return smart_text(f"{self.alias.address} -> {self.address}")

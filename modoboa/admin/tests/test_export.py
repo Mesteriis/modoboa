@@ -21,17 +21,17 @@ class ExportTestCase(ModoTestCase):
         factories.populate_database()
 
     def __export_domains(self, domfilter=""):
-        self.client.get(
-            "{}?domfilter={}".format(
-                reverse("admin:_domain_list"), domfilter))
+        self.client.get(f'{reverse("admin:_domain_list")}?domfilter={domfilter}')
         return self.client.post(
             reverse("admin:domain_export"), {"filename": "test.csv"}
         )
 
     def __export_identities(self, idtfilter="", grpfilter=""):
         self.client.get(
-            reverse("admin:_identity_list") +
-            "?grpfilter=%s&idtfilter=%s" % (grpfilter, idtfilter)
+            (
+                reverse("admin:_identity_list")
+                + f"?grpfilter={grpfilter}&idtfilter={idtfilter}"
+            )
         )
         return self.client.post(
             reverse("admin:identity_export"),

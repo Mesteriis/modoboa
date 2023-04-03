@@ -20,7 +20,7 @@ class ManageDKIMKeys(BaseCommand):
     def create_new_dkim_key(self, domain):
         """Create a new DKIM key."""
         storage_dir = param_tools.get_global_parameter("dkim_keys_storage_dir")
-        pkey_path = os.path.join(storage_dir, "{}.pem".format(domain.name))
+        pkey_path = os.path.join(storage_dir, f"{domain.name}.pem")
         alarm_qset = domain.alarms.filter(internal_name=DKIM_WRITE_ERROR)
         if not os.access(storage_dir, os.W_OK):
             if not alarm_qset.exists():
@@ -34,25 +34,23 @@ class ManageDKIMKeys(BaseCommand):
             return
         elif alarm_qset.exists():
             alarm_qset.first().close()
-        key_size = (
-            domain.dkim_key_length if domain.dkim_key_length
-            else self.default_key_length)
-        code, output = sysutils.exec_cmd(
-            "openssl genrsa -out {} {}".format(pkey_path, key_size))
+        key_size = domain.dkim_key_length or self.default_key_length
+        code, output = sysutils.exec_cmd(f"openssl genrsa -out {pkey_path} {key_size}")
         if code:
-            print("Failed to generate DKIM private key for domain {}: {}"
-                  .format(domain.name, smart_text(output)))
+            print(
+                f"Failed to generate DKIM private key for domain {domain.name}: {smart_text(output)}"
+            )
         domain.dkim_private_key_path = pkey_path
-        code, output = sysutils.exec_cmd(
-            "openssl rsa -in {} -pubout".format(pkey_path))
+        code, output = sysutils.exec_cmd(f"openssl rsa -in {pkey_path} -pubout")
         if code:
-            print("Failed to generate DKIM public key for domain {}: {}"
-                  .format(domain.name, smart_text(output)))
-        public_key = ""
-        for cpt, line in enumerate(smart_text(output).splitlines()):
-            if cpt == 0 or line.startswith("-----"):
-                continue
-            public_key += line
+            print(
+                f"Failed to generate DKIM public key for domain {domain.name}: {smart_text(output)}"
+            )
+        public_key = "".join(
+            line
+            for cpt, line in enumerate(smart_text(output).splitlines())
+            if cpt != 0 and not line.startswith("-----")
+        )
         domain.dkim_public_key = public_key
         domain.save(update_fields=["dkim_public_key", "dkim_private_key_path"])
 

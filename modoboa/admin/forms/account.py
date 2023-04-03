@@ -128,15 +128,15 @@ class AccountFormGeneral(forms.ModelForm):
         only object available...
 
         """
-        if not hasattr(self.instance, "mailbox"):
-            return False
-        return not self.instance.mailbox.domain.enabled
+        return (
+            not self.instance.mailbox.domain.enabled
+            if hasattr(self.instance, "mailbox")
+            else False
+        )
 
     def clean_role(self):
         if self.user.role == "DomainAdmins":
-            if self.instance == self.user:
-                return "DomainAdmins"
-            return "SimpleUsers"
+            return "DomainAdmins" if self.instance == self.user else "SimpleUsers"
         elif self.user.role == "Resellers" and self.instance == self.user:
             return "Resellers"
         return self.cleaned_data["role"]
@@ -157,19 +157,17 @@ class AccountFormGeneral(forms.ModelForm):
         super(AccountFormGeneral, self).clean()
         if self.errors:
             return self.cleaned_data
-        condition = (
-            self.cleaned_data.get("master_user") and
-            self.cleaned_data["role"] != "SuperAdmins"
-        )
-        if condition:
+        if condition := (
+            self.cleaned_data.get("master_user")
+            and self.cleaned_data["role"] != "SuperAdmins"
+        ):
             self.add_error(
                 "master_user",
                 _("Only super administrators are allowed for this mode")
             )
-        random_password = self.cleaned_data.get("random_password")
-        if random_password:
+        if random_password := self.cleaned_data.get("random_password"):
             self.cleaned_data["password2"] = lib.make_password()
-        elif "random_password" in self.fields and not random_password:
+        elif "random_password" in self.fields:
             password1 = self.cleaned_data.get("password1", "")
             password2 = self.cleaned_data.get("password2", "")
             empty_password = password1 == "" and password2 == ""
@@ -281,12 +279,12 @@ class AccountFormMail(forms.Form, DynamicForm):
             self.fields["email"].required = True
             qset = self.mb.aliasrecipient_set.filter(alias__internal=False)
             for cpt, ralias in enumerate(qset):
-                name = "aliases_{}".format(cpt + 1)
+                name = f"aliases_{cpt + 1}"
                 self._create_field(
                     lib_fields.UTF8AndEmptyUserEmailField, name,
                     ralias.alias.address)
             for cpt, saddress in enumerate(self.mb.senderaddress_set.all()):
-                name = "senderaddress_{}".format(cpt + 1)
+                name = f"senderaddress_{cpt + 1}"
                 self._create_field(
                     lib_fields.UTF8AndEmptyUserEmailField, name,
                     saddress.address)
@@ -437,10 +435,10 @@ class AccountFormMail(forms.Form, DynamicForm):
                 self.sender_addresses.remove(saddress.address)
         if not len(self.sender_addresses):
             return
-        to_create = []
-        for saddress in self.sender_addresses:
-            to_create.append(
-                models.SenderAddress(address=saddress, mailbox=self.mb))
+        to_create = [
+            models.SenderAddress(address=saddress, mailbox=self.mb)
+            for saddress in self.sender_addresses
+        ]
         models.SenderAddress.objects.bulk_create(to_create)
 
     def save(self, user, account):
@@ -567,17 +565,12 @@ class AccountForm(TabForms):
         if form["id"] == "general":
             return True
 
-        if hasattr(self, "check_%s" % form["id"]):
-            if not getattr(self, "check_%s" % form["id"])(self.account):
-                return False
-            return True
-
+        if hasattr(self, f'check_{form["id"]}'):
+            return bool(getattr(self, f'check_{form["id"]}')(self.account))
         results = signals.check_extra_account_form.send(
             sender=self.__class__, account=self.account, form=form)
         results = [result[1] for result in results]
-        if False in results:
-            return False
-        return True
+        return False not in results
 
     def is_valid(self):
         """Two steps validation."""

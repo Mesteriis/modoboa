@@ -33,7 +33,7 @@ def insert_record(target, record, name):
         }
     target[name][record.source_ip]["total"] += record.count
     for typ in ["spf", "dkim"]:
-        result = getattr(record, "{}_result".format(typ))
+        result = getattr(record, f"{typ}_result")
         target[name][record.source_ip][typ][result] += record.count
 
 
@@ -41,10 +41,8 @@ def week_range(year, weeknumber):
     """Return start and end dates of a given week."""
     tz = timezone.get_current_timezone()
     fmt = "%Y-%W-%w"
-    start_week = datetime.datetime.strptime(
-        "{}-{}-{}".format(year, weeknumber, 1), fmt)
-    end_week = datetime.datetime.strptime(
-        "{}-{}-{}".format(year, weeknumber, 0), fmt)
+    start_week = datetime.datetime.strptime(f"{year}-{weeknumber}-1", fmt)
+    end_week = datetime.datetime.strptime(f"{year}-{weeknumber}-0", fmt)
     return tz.localize(start_week), tz.localize(end_week)
 
 
@@ -62,7 +60,7 @@ class DomainReportView(
         if not self.period:
             year, week, day = timezone.now().isocalendar()
             week -= 1
-            self.period = "{}-{}".format(year, week)
+            self.period = f"{year}-{week}"
         else:
             year, week = self.period.split("-")
 
@@ -115,8 +113,7 @@ class DomainReportView(
 
             ips = (r.source_ip for r in all_records)
             with concurrent.futures.ThreadPoolExecutor(max_workers=16) as pool:
-                dns_names = {i: n for (i, n) in
-                             list(pool.map(get_domain_name_from_ip, ips))}
+                dns_names = dict(list(pool.map(get_domain_name_from_ip, ips)))
 
         for record in all_records:
             stats["total"] += record.count

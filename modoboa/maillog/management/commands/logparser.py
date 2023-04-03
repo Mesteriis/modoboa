@@ -198,15 +198,11 @@ class LogParser:
         month_steps = week_steps * 5
         year_steps = month_steps * 12
 
-        # Set up data sources for our RRD
-        params = []
-        for v in variables:
-            params += ["DS:%s:%s:%s:0:U" % (v, ds_type, rrdstep * 2)]
-
+        params = [f"DS:{v}:{ds_type}:{rrdstep * 2}:0:U" for v in variables]
         # Set up RRD to archive data
         for cf in ["AVERAGE", "MAX"]:
             for step in [day_steps, week_steps, month_steps, year_steps]:
-                params += ["RRA:%s:0.5:%s:%s" % (cf, step, realrows)]
+                params += [f"RRA:{cf}:0.5:{step}:{realrows}"]
 
         # With those setup, we can now created the RRD
         rrdtool.create(str(fname),
@@ -221,23 +217,23 @@ class LogParser:
         Add missing Data Sources (DS) to existing Round Robin Archive (RRA):
         See init_rrd for details.
         """
-        ds_def = "DS:%s:ABSOLUTE:%s:0:U" % (dsname, rrdstep * 2)
+        ds_def = f"DS:{dsname}:ABSOLUTE:{rrdstep * 2}:0:U"
         rrdtool.tune(fname, ds_def)
-        self._dprint("[rrd] added DS %s to %s" % (dsname, fname))
+        self._dprint(f"[rrd] added DS {dsname} to {fname}")
 
     def add_point_to_rrd(self, fname, tpl, values, ts=None):
         """Try to add a new point to RRD file."""
         if ts:
-            values = "{}:{}".format(ts, values)
+            values = f"{ts}:{values}"
         if self.verbose:
-            print("[rrd] VERBOSE update -t %s %s" % (tpl, values))
+            print(f"[rrd] VERBOSE update -t {tpl} {values}")
         try:
             rrdtool.update(str(fname), "-t", tpl, values)
         except rrdtool.OperationalError as e:
             op_match = re.match(r"unknown DS name '(\w+)'", str(e))
             if op_match is None:
                 raise
-            self.add_datasource_to_rrd(str(fname), op_match.group(1))
+            self.add_datasource_to_rrd(str(fname), op_match[1])
             rrdtool.update(str(fname), "-t", tpl, values)
 
     def update_rrd(self, dom, t):
@@ -249,20 +245,19 @@ class LogParser:
         False : syslog may have probably been already recorded
         or something wrong
         """
-        fname = "%s/%s.rrd" % (self.workdir, dom)
+        fname = f"{self.workdir}/{dom}.rrd"
         m = t - (t % rrdstep)
 
-        self._dprint("[rrd] updating %s" % fname)
+        self._dprint(f"[rrd] updating {fname}")
         if not os.path.exists(fname):
             self.lupdates[fname] = self.init_rrd(fname, m)
-            self._dprint("[rrd] create new RRD file %s" % fname)
-        else:
-            if fname not in self.lupdates:
-                self.lupdates[fname] = rrdtool.last(str(fname))
+            self._dprint(f"[rrd] create new RRD file {fname}")
+        elif fname not in self.lupdates:
+            self.lupdates[fname] = rrdtool.last(str(fname))
 
         if m <= self.lupdates[fname]:
             if self.verbose:
-                print("[rrd] VERBOSE events at %s already recorded in RRD" % m)
+                print(f"[rrd] VERBOSE events at {m} already recorded in RRD")
             return False
 
         tpl = ""
@@ -274,14 +269,14 @@ class LogParser:
         # Est ce vraiment nécessaire... ?
         if m > self.lupdates[fname] + rrdstep:
             values = ""
-            for v in variables:
+            for _ in variables:
                 if values != "":
                     values += ":"
                 values += "0"
             for p in range(self.lupdates[fname] + rrdstep, m, rrdstep):
                 self.add_point_to_rrd(fname, tpl, values, ts=p)
 
-        values = "%s" % m
+        values = f"{m}"
         tpl = ""
         for v in variables:
             values += ":"
@@ -294,9 +289,7 @@ class LogParser:
         return True
 
     def initcounters(self, dom):
-        init = {}
-        for v in variables:
-            init[v] = 0
+        init = {v: 0 for v in variables}
         self.data[dom][self.cur_t] = init
 
     def inc_counter(self, dom, counter, val=1):
@@ -326,8 +319,7 @@ class LogParser:
         :param month: the month of the current record beeing parsed
         :return: an integer
         """
-        month = time.strptime(month, "%b").tm_mon if not month.isdigit() \
-            else int(month)
+        month = int(month) if month.isdigit() else time.strptime(month, "%b").tm_mon
         if self.curmonth == 1 and month != self.curmonth:
             return self.__year - 1
         return self.__year
@@ -355,12 +347,9 @@ class LogParser:
         """
         m = self._srs_regex["reverse_srs0"].match(mail_address)
         m = self._srs_regex["reverse_srs1"].match(mail_address) \
-            if m is None else m
+                if m is None else m
 
-        if m is not None:
-            return "%s@%s" % m.group(2, 1)
-        else:
-            return mail_address
+        return "%s@%s" % m.group(2, 1) if m is not None else mail_address
 
     def _parse_amavis(self, log, host, pid, subprog):
         """ Parse an Amavis log entry.
@@ -395,7 +384,7 @@ class LogParser:
         if m is None:
             return False
         rmilter_hash, msg = m.groups()
-        workdict_key = "rmilter_" + rmilter_hash
+        workdict_key = f"rmilter_{rmilter_hash}"
 
         # Virus check must come before spam check due to pattern similarity.
         m = self._regex["rmilter_virus"].match(msg)
@@ -484,12 +473,10 @@ class LogParser:
             return False
         (msg_to, msg_status) = m.groups()
         if queue_id not in self.workdict:
-            self._dprint("[parser] inconsistent mail (%s: %s), skipping"
-                         % (queue_id, msg_to))
+            self._dprint(f"[parser] inconsistent mail ({queue_id}: {msg_to}), skipping")
             return True
         if msg_status not in variables:
-            self._dprint("[parser] unsupported status %s, skipping"
-                         % msg_status)
+            self._dprint(f"[parser] unsupported status {msg_status}, skipping")
             return True
 
         # orig_to is optional.
@@ -503,14 +490,11 @@ class LogParser:
             self.inc_counter(from_domain, "size_sent",
                              self.workdict[queue_id]["size"])
 
-        # Handle local "to" domains.
-        to_domain = None
         condition = (
             msg_orig_to is not None and
             not self.is_srs_forward(msg_orig_to)
         )
-        if condition:
-            to_domain = split_mailbox(msg_orig_to)[1]
+        to_domain = split_mailbox(msg_orig_to)[1] if condition else None
         if to_domain is None:
             to_domain = split_mailbox(msg_to)[1]
 
@@ -578,12 +562,11 @@ class LogParser:
         host, prog, subprog, pid, log = m.groups()
 
         try:
-            parser = getattr(self, "_parse_{}".format(prog))
+            parser = getattr(self, f"_parse_{prog}")
             if not parser(log, host, pid, subprog):
                 self._dprint("[parser] ignoring %r log: %r" % (prog, log))
         except AttributeError:
-            self._dprint(
-                "[parser] no log handler for \"{}\": {}".format(prog, log))
+            self._dprint(f'[parser] no log handler for \"{prog}\": {log}')
 
     def process(self):
         """Process the log file.
@@ -596,11 +579,11 @@ class LogParser:
                 for line in fp:
                     self._parse_line(line)
         except IOError as errno:
-            self._dprint("%s" % errno)
+            self._dprint(f"{errno}")
             sys.exit(1)
 
         for dom, data in self.data.items():
-            self._dprint("[rrd] dealing with domain %s" % dom)
+            self._dprint(f"[rrd] dealing with domain {dom}")
             for t in sorted(data.keys()):
                 self.update_rrd(dom, t)
 

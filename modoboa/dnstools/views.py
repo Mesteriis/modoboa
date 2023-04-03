@@ -14,10 +14,13 @@ class DomainAccessRequiredMixin(auth_mixins.AccessMixin):
     """Check if user can access domain."""
 
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.can_access(self.get_object()):
-            return self.handle_no_permission()
-        return super(DomainAccessRequiredMixin, self).dispatch(
-            request, *args, **kwargs)
+        return (
+            super(DomainAccessRequiredMixin, self).dispatch(
+                request, *args, **kwargs
+            )
+            if request.user.can_access(self.get_object())
+            else self.handle_no_permission()
+        )
 
 
 class DNSRecordDetailView(

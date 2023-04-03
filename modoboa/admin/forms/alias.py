@@ -63,19 +63,16 @@ class AliasForm(forms.ModelForm, DynamicForm):
             self.fields["domain"].required = False
             self.fields["domain"].queryset = Domain.objects.get_for_admin(user)
         if len(args) and isinstance(args[0], QueryDict):
-            if "instance" in kwargs:
-                if not kwargs["instance"].domain.enabled:
-                    del self.fields["enabled"]
+            if "instance" in kwargs and not kwargs["instance"].domain.enabled:
+                del self.fields["enabled"]
             self._load_from_qdict(args[0], "recipients", forms.EmailField)
         elif "instance" in kwargs:
             alias = kwargs["instance"]
             if not alias.domain.enabled:
                 self.fields["enabled"].widget.attrs["disabled"] = "disabled"
-            cpt = 1
-            for rcpt in alias.aliasrecipient_set.filter(alias__internal=False):
+            for cpt, rcpt in enumerate(alias.aliasrecipient_set.filter(alias__internal=False), start=1):
                 name = "recipients_%d" % cpt
                 self._create_field(forms.EmailField, name, rcpt.address, 2)
-                cpt += 1
 
     def clean_address(self):
         """Check if address points to a local domain."""
@@ -118,8 +115,7 @@ class AliasForm(forms.ModelForm, DynamicForm):
         """Custom save method."""
         alias = super(AliasForm, self).save(commit=False)
         if self.cleaned_data.get("random_address"):
-            alias.address = "{}@{}".format(
-                Alias.generate_random_address(), alias.domain)
+            alias.address = f"{Alias.generate_random_address()}@{alias.domain}"
         else:
             local_part, domname = split_mailbox(self.cleaned_data["address"])
             alias.domain = Domain.objects.get(name=domname)

@@ -218,7 +218,7 @@ class AdminParametersForm(param_forms.AdminParametersForm):
                     dpath = fpath
         if dpath:
             try:
-                code, version = exec_cmd("%s --version" % dpath)
+                code, version = exec_cmd(f"{dpath} --version")
             except OSError:
                 hide_fields = True
             else:
@@ -283,11 +283,11 @@ class AdminParametersForm(param_forms.AdminParametersForm):
     def clean(self):
         """Check MX options."""
         cleaned_data = super(AdminParametersForm, self).clean()
-        condition = (
-            cleaned_data.get("enable_mx_checks") and
-            cleaned_data.get("domains_must_have_authorized_mx") and
-            not cleaned_data.get("valid_mxs"))
-        if condition:
+        if condition := (
+            cleaned_data.get("enable_mx_checks")
+            and cleaned_data.get("domains_must_have_authorized_mx")
+            and not cleaned_data.get("valid_mxs")
+        ):
             self.add_error(
                 "valid_mxs",
                 _("Define at least one authorized network / address")

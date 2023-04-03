@@ -17,9 +17,8 @@ class NotDefined(exceptions.ModoboaException):
 
     def __str__(self):
         if self.name is None:
-            return "Application {} not registered".format(self.app)
-        return "Parameter {} not defined for app {}".format(
-            self.name, self.app)
+            return f"Application {self.app} not registered"
+        return f"Parameter {self.name} not defined for app {self.app}"
 
 
 class Registry(object):
@@ -60,9 +59,10 @@ class Registry(object):
 
     def get_applications(self, level):
         """Return all applications registered for level."""
-        result = [{"name": key, "label": value["label"]}
-                  for key, value in self._registry2[level].items()]
-        return result
+        return [
+            {"name": key, "label": value["label"]}
+            for key, value in self._registry2[level].items()
+        ]
 
     def get_label(self, level, app):
         return self._registry2[level][app]["label"]
@@ -232,8 +232,7 @@ class Manager:
 def get_localconfig():
     """Retrieve current LocalConfig instance."""
     from modoboa.core import models as core_models
-    request = signals.get_request()
-    if request:
+    if request := signals.get_request():
         return request.localconfig
     return core_models.LocalConfig.objects.first()
 

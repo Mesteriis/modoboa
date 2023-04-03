@@ -24,11 +24,9 @@ class SMSBackend:
 
 def get_backend_class(name):
     """Return class for given backend."""
-    backend_module = import_module(
-        "modoboa.core.sms_backends.{}".format(name))
+    backend_module = import_module(f"modoboa.core.sms_backends.{name}")
     try:
-        backend_class = getattr(
-            backend_module, "{}Backend".format(name.upper()))
+        backend_class = getattr(backend_module, f"{name.upper()}Backend")
     except AttributeError:
         return None
     else:
@@ -38,9 +36,7 @@ def get_backend_class(name):
 def get_backend_settings(name):
     """Return settings of given backend."""
     backend_class = get_backend_class(name)
-    if not backend_class:
-        return None
-    return backend_class.settings
+    return backend_class.settings if backend_class else None
 
 
 def get_all_backend_settings():
@@ -50,18 +46,15 @@ def get_all_backend_settings():
         name = backend[0]
         if not name:
             continue
-        b_settings = get_backend_settings(name)
-        if b_settings:
-            settings.update(b_settings)
+        if b_settings := get_backend_settings(name):
+            settings |= b_settings
     return settings
 
 
 def get_backend_serializer_settings(name):
     """Return serializer settings of given backend."""
     backend_class = get_backend_class(name)
-    if not backend_class:
-        return None
-    return backend_class.serializer_settings
+    return backend_class.serializer_settings if backend_class else None
 
 
 def get_all_backend_serializer_settings():
@@ -71,18 +64,15 @@ def get_all_backend_serializer_settings():
         name = backend[0]
         if not name:
             continue
-        b_settings = get_backend_serializer_settings(name)
-        if b_settings:
-            settings.update(b_settings)
+        if b_settings := get_backend_serializer_settings(name):
+            settings |= b_settings
     return settings
 
 
 def get_backend_structure(name):
     """Return parameters structure of given backend."""
     backend_class = get_backend_class(name)
-    if not backend_class:
-        return None
-    return backend_class.structure
+    return backend_class.structure if backend_class else None
 
 
 def get_all_backend_structures():
@@ -92,8 +82,7 @@ def get_all_backend_structures():
         name = backend[0]
         if not name:
             continue
-        b_structure = get_backend_structure(name)
-        if b_structure:
+        if b_structure := get_backend_structure(name):
             structure += b_structure
     return structure
 
@@ -105,10 +94,8 @@ def get_all_backend_visibility_rules():
         name = backend[0]
         if not name:
             continue
-        backend_class = get_backend_class(name)
-        if not backend_class:
-            continue
-        rules.update(backend_class.visibility_rules)
+        if backend_class := get_backend_class(name):
+            rules |= backend_class.visibility_rules
     return rules
 
 
@@ -118,6 +105,4 @@ def get_active_backend(parameters):
     if not name:
         return None
     backend_class = get_backend_class(name)
-    if not backend_class:
-        return None
-    return backend_class(parameters)
+    return backend_class(parameters) if backend_class else None

@@ -28,7 +28,7 @@ class MailboxOperationTestCase(ModoTestCase):
         """Initiate test env."""
         super(MailboxOperationTestCase, self).setUp()
         self.workdir = tempfile.mkdtemp()
-        path = "{}/test.com/admin".format(self.workdir)
+        path = f"{self.workdir}/test.com/admin"
         os.makedirs(path)
         self.set_global_parameter("handle_mailboxes", True)
         self.set_global_parameter("enable_admin_limits", False, app="limits")
@@ -40,7 +40,7 @@ class MailboxOperationTestCase(ModoTestCase):
     @mock.patch("modoboa.admin.models.Mailbox.mail_home")
     def test_delete_account(self, mail_home_mock):
         """Check delete operation."""
-        path = "{}/test.com/admin".format(self.workdir)
+        path = f"{self.workdir}/test.com/admin"
         mail_home_mock.__get__ = mock.Mock(return_value=path)
         mb = models.Mailbox.objects.select_related("user").get(
             address="admin", domain__name="test.com")
@@ -54,7 +54,7 @@ class MailboxOperationTestCase(ModoTestCase):
     @mock.patch("modoboa.admin.models.Mailbox.mail_home")
     def test_rename_account(self, mail_home_mock):
         """Check rename operation."""
-        path = "{}/test.com/admin".format(self.workdir)
+        path = f"{self.workdir}/test.com/admin"
         mail_home_mock.__get__ = mock.Mock(return_value=path)
         mb = models.Mailbox.objects.select_related("user").get(
             address="admin", domain__name="test.com")
@@ -66,7 +66,7 @@ class MailboxOperationTestCase(ModoTestCase):
         self.ajax_post(
             reverse("admin:account_change", args=[mb.user.pk]), values
         )
-        path = "{}/test.com/admin2".format(self.workdir)
+        path = f"{self.workdir}/test.com/admin2"
         mail_home_mock.__get__ = mock.Mock(return_value=path)
         call_command("handle_mailbox_operations")
         self.assertFalse(models.MailboxOperation.objects.exists())
@@ -75,7 +75,7 @@ class MailboxOperationTestCase(ModoTestCase):
     @mock.patch("modoboa.admin.models.Mailbox.mail_home")
     def test_delete_domain(self, mail_home_mock):
         """Check delete operation."""
-        path = "{}/test.com/admin".format(self.workdir)
+        path = f"{self.workdir}/test.com/admin"
         mail_home_mock.__get__ = mock.Mock(return_value=path)
         domain = models.Domain.objects.get(name="test.com")
         self.ajax_post(reverse("admin:domain_delete", args=[domain.pk]))

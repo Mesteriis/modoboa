@@ -67,12 +67,12 @@ class TokenObtainPairView(jwt_views.TokenObtainPairView):
             _("User '%s' successfully logged in"), user.username
         )
         if user and user.is_active:
-            condition = (
-                user.is_local and
-                param_tools.get_global_parameter(
-                    "update_scheme", raise_exception=False)
-            )
-            if condition:
+            if condition := (
+                user.is_local
+                and param_tools.get_global_parameter(
+                    "update_scheme", raise_exception=False
+                )
+            ):
                 # check if password scheme is correct
                 scheme = param_tools.get_global_parameter(
                     "password_scheme", raise_exception=False)
@@ -162,11 +162,11 @@ class PasswordResetSmsTOTP(APIView):
         payload = {"type": "resend"}
         if request.data["type"] == "confirm":
             serializer_response = serializer.context["response"]
-            payload.update({
+            payload |= {
                 "token": serializer_response[0],
                 "id": serializer_response[1],
-                "type": "confirm"
-            })
+                "type": "confirm",
+            }
         delete_cache_key(PasswordResetTotpThrottle, self.get_throttles(), request)
         return response.Response(payload, 200)
 
@@ -182,11 +182,8 @@ class PasswordResetConfirmView(APIView):
         try:
             serializer.is_valid(raise_exception=True)
         except serializers.PasswordRequirementsFailure as e:
-            data = {"type": "password_requirement"}
-            errors = []
-            for element in e.message_list:
-                errors.append(element)
-            data.update({"errors": errors})
+            errors = list(e.message_list)
+            data = {"type": "password_requirement", "errors": errors}
             return response.Response(data, 400)
         serializer.save()
         delete_cache_key(PasswordResetApplyThrottle, self.get_throttles(), request)

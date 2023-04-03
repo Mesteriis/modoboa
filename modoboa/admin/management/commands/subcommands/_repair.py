@@ -118,5 +118,5 @@ class Repair(BaseCommand):
         for func in known_problems:
             title = func.__doc__.strip()
             log("", **options)
-            log("Checking for... {}...".format(title), **options)
+            log(f"Checking for... {title}...", **options)
             func(**options)

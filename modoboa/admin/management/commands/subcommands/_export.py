@@ -57,4 +57,4 @@ class ExportCommand(BaseCommand):
         exts_pool.load_all()
         self.csvwriter = csv.writer(
             self.stdout, delimiter=smart_text(options["sepchar"]))
-        getattr(self, "export_{}".format(options["objtype"]))()
+        getattr(self, f'export_{options["objtype"]}')()

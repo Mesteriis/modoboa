@@ -48,9 +48,10 @@ class ComplexityValidator(object):
                 )
                 .format(self.upper))
         condition = (
-            self.specials > 0 and
-            sum(1 for char in password if char in special_characters) <
-            self.specials)
+            self.specials > 0
+            and sum(char in special_characters for char in password)
+            < self.specials
+        )
         if condition:
             raise ValidationError(
                 ungettext(

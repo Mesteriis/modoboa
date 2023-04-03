@@ -41,15 +41,20 @@ def extra_account_actions(sender, account, **kwargs):
     if not param_tools.get_global_parameter("enabled_pdfcredentials"):
         return []
     fname = get_creds_filename(account)
-    if not os.path.exists(fname):
-        return []
-    return [{
-        "name": "get_credentials",
-        "url": reverse("pdfcredentials:account_credentials",
-                       args=[account.id]),
-        "img": "fa fa-download",
-        "title": _("Retrieve user's credentials as a PDF document")
-    }]
+    return (
+        [
+            {
+                "name": "get_credentials",
+                "url": reverse(
+                    "pdfcredentials:account_credentials", args=[account.id]
+                ),
+                "img": "fa fa-download",
+                "title": _("Retrieve user's credentials as a PDF document"),
+            }
+        ]
+        if os.path.exists(fname)
+        else []
+    )
 
 
 @receiver(admin_signals.extra_account_identities_actions)

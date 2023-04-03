@@ -6,12 +6,11 @@ def rename_settings(apps, schema_editor):
     """Rename settings."""
     LocalConfig = apps.get_model("core", "LocalConfig")
     lc = LocalConfig.objects.first()
-    condition = (
-        lc and
-        "admin" in lc._parameters and
-        "default_domain_quota" in lc._parameters["admin"]
-    )
-    if condition:
+    if condition := (
+        lc
+        and "admin" in lc._parameters
+        and "default_domain_quota" in lc._parameters["admin"]
+    ):
         lc._parameters["admin"]["default_mailbox_quota"] = (
             lc._parameters["admin"]["default_domain_quota"])
         del lc._parameters["admin"]["default_domain_quota"]

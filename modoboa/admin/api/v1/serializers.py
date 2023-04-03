@@ -67,10 +67,13 @@ class DomainSerializer(serializers.ModelSerializer):
         )
         user = self.context["request"].user
         value = value.lower()
-        if domains_must_have_authorized_mx and not user.is_superuser:
-            if not lib.domain_has_authorized_mx(value):
-                raise serializers.ValidationError(
-                    _("No authorized MX record found for this domain"))
+        if (
+            domains_must_have_authorized_mx
+            and not user.is_superuser
+            and not lib.domain_has_authorized_mx(value)
+        ):
+            raise serializers.ValidationError(
+                _("No authorized MX record found for this domain"))
         return value
 
     def validate_quota(self, value):
@@ -171,11 +174,14 @@ class MailboxSerializer(serializers.ModelSerializer):
     def validate(self, data):
         """Check if quota is required."""
         method = self.context["request"].method
-        if not data.get("use_domain_quota", False):
-            if "quota" not in data and method != "PATCH":
-                raise serializers.ValidationError({
-                    "quota": _("This field is required")
-                })
+        if (
+            not data.get("use_domain_quota", False)
+            and "quota" not in data
+            and method != "PATCH"
+        ):
+            raise serializers.ValidationError({
+                "quota": _("This field is required")
+            })
         return data
 
 
@@ -330,15 +336,11 @@ class WritableAccountSerializer(AccountSerializer):
                 except lib_exceptions.ModoboaException as inst:
                     raise serializers.ValidationError({
                         "mailbox": force_text(inst)})
-        condition = (
-            not data.get("random_password") and (
-                data.get("password") or
-                not self.partial
-            )
-        )
-        if condition:
-            password = data.get("password")
-            if password:
+        if condition := (
+            not data.get("random_password")
+            and (data.get("password") or not self.partial)
+        ):
+            if password := data.get("password"):
                 try:
                     password_validation.validate_password(
                         data["password"], self.instance)
@@ -354,8 +356,7 @@ class WritableAccountSerializer(AccountSerializer):
             return data
         domains = []
         for name in domain_names:
-            domain = admin_models.Domain.objects.filter(name=name).first()
-            if domain:
+            if domain := admin_models.Domain.objects.filter(name=name).first():
                 domains.append(domain)
                 continue
             raise serializers.ValidationError({

@@ -65,14 +65,14 @@ class RelayDomainAPITestCase(DataMixin, ModoAPITestCase):
             ["relay_target_port: This field is required"]
         )
 
-        settings.update({"relay_target_port": 25})
+        settings["relay_target_port"] = 25
         data["transport"]["_settings"] = json.dumps(settings)
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 201)
         domain = admin_models.Domain.objects.get(name="test3.com")
         self.assertEqual(
-            domain.transport.next_hop, "[{}]:{}".format(
-                settings["relay_target_host"], settings["relay_target_port"])
+            domain.transport.next_hop,
+            f'[{settings["relay_target_host"]}]:{settings["relay_target_port"]}',
         )
 
     def test_update(self):
@@ -93,8 +93,8 @@ class RelayDomainAPITestCase(DataMixin, ModoAPITestCase):
         self.domain1.transport.refresh_from_db()
         self.assertEqual(self.domain1.name, data["name"])
         self.assertEqual(
-            self.domain1.transport.next_hop, "[{}]:{}".format(
-                settings["relay_target_host"], settings["relay_target_port"])
+            self.domain1.transport.next_hop,
+            f'[{settings["relay_target_host"]}]:{settings["relay_target_port"]}',
         )
 
     def test_delete(self):

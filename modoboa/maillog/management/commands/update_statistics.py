@@ -27,7 +27,7 @@ class Command(BaseCommand):
         """Create RRD file."""
         step = 3600
         ds_name = "new_accounts"
-        params = ["DS:{}:ABSOLUTE:{}:0:U".format(ds_name, step * 2)]
+        params = [f"DS:{ds_name}:ABSOLUTE:{step * 2}:0:U"]
         params += [
             "RRA:AVERAGE:0.5:1:48",     # 48 hours with a 1h granularity
             "RRA:AVERAGE:0.5:24:31",    # 31 days with a 1d granularity
@@ -48,8 +48,7 @@ class Command(BaseCommand):
             start = end - relativedelta(hours=1)
             new_accounts = core_models.User.objects.filter(
                 date_joined__gte=start, date_joined__lt=end).count()
-            data.append(
-                "{}:{}".format(int(end.strftime("%s")), new_accounts * 60))
+            data.append(f'{int(end.strftime("%s"))}:{new_accounts * 60}')
         else:
             existing_stats = {}
             start = None
@@ -69,8 +68,7 @@ class Command(BaseCommand):
             hour = start
             while hour <= end:
                 new_accounts = existing_stats.get(int(hour.strftime("%s")), 0)
-                data.append("{}:{}".format(
-                    int(hour.strftime("%s")), new_accounts * 60))
+                data.append(f'{int(hour.strftime("%s"))}:{new_accounts * 60}')
                 hour += relativedelta(hours=1)
         if not os.path.exists(db_path):
             self._create_new_accounts_rrd_file(

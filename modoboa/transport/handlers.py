@@ -18,6 +18,5 @@ def register_postfix_maps(sender, **kwargs):
 @receiver(signals.pre_save, sender=models.Transport)
 def serialize_transport_settings(sender, instance, **kwargs):
     """Call backend serialize method on transport."""
-    backend = backends.manager.get_backend(instance.service)
-    if backend:
+    if backend := backends.manager.get_backend(instance.service):
         backend.serialize(instance)

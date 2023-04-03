@@ -16,9 +16,7 @@ def rename_app_parameters(app, model):
     """Rename all parameters for a given app."""
     qset = model.objects.filter(name__startswith=app[0])
     for param in qset:
-        param.name = param.name.replace(
-            "{}.".format(app[0]), "{}.".format(app[1])
-        )
+        param.name = param.name.replace(f"{app[0]}.", f"{app[1]}.")
         param.save()
 
 

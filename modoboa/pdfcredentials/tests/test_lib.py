@@ -59,7 +59,7 @@ class PDFCredentialsLibTestCase(ModoAPITestCase):
         """Test that PDFs are decrypted."""
         username = "toto1818@test.com"
         self._create_account(username)
-        fname = os.path.join(self.workdir, "{}.pdf".format(username))
+        fname = os.path.join(self.workdir, f"{username}.pdf")
         self.assertTrue(os.path.exists(fname))
         filebuff = lib.decrypt_file(fname)
         self.assertIn("application/pdf",

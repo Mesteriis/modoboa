@@ -14,17 +14,16 @@ from modoboa.lib.exceptions import InternalError
 
 def create_connection(srv_address, srv_port, config, username, password):
     """Create a new connection with given server."""
-    uri = "{}:{}".format(srv_address, srv_port)
-    uri = "{}://{}".format(
-        "ldaps" if config["ldap_secured"] == "ssl" else "ldap", uri)
+    uri = f"{srv_address}:{srv_port}"
+    uri = f'{"ldaps" if config["ldap_secured"] == "ssl" else "ldap"}://{uri}'
     conn = ldap.initialize(uri)
     conn.protocol_version = 3
     conn.set_option(ldap.OPT_X_TLS_DEMAND, True)
     conn.set_option(ldap.OPT_DEBUG_LEVEL, 255)
     conn.set_option(ldap.OPT_REFERRALS, 0)
     conn.simple_bind_s(
-        force_str(username if username else config["ldap_sync_bind_dn"]),
-        force_str(password if password else config["ldap_sync_bind_password"])
+        force_str(username or config["ldap_sync_bind_dn"]),
+        force_str(password or config["ldap_sync_bind_password"]),
     )
     return conn
 
@@ -156,29 +155,23 @@ def find_user_groups(conn, config, dn, entry):
         config["ldap_group_type"] == "groupofnames"
     )
     if condition:
-        flt = "(member={})".format(dn)
+        flt = f"(member={dn})"
     elif config["ldap_group_type"] == "posixgroup":
-        flt = "(memberUid={})".format(force_str(entry["uid"][0]))
+        flt = f'(memberUid={force_str(entry["uid"][0])})'
 
     result = conn.search_s(
         config["ldap_groups_search_base"],
         ldap.SCOPE_SUBTREE,
         flt
     )
-    groups = []
-    for dn, entry in result:
-        if not dn:
-            continue
-        groups.append(dn.split(',')[0].split('=')[1])
-    return groups
+    return [dn.split(',')[0].split('=')[1] for dn, entry in result if dn]
 
 
 def user_is_disabled(config, entry):
     """Check if LDAP user is disabled or not."""
-    if config["ldap_is_active_directory"]:
-        if "userAccountControl" in entry:
-            value = int(force_str(entry["userAccountControl"][0]))
-            return value == 514
+    if config["ldap_is_active_directory"] and "userAccountControl" in entry:
+        value = int(force_str(entry["userAccountControl"][0]))
+        return value == 514
     # FIXME: is there a way to detect a disabled user with OpenLDAP?
     return False
 
@@ -204,15 +197,17 @@ def import_accounts_from_ldap(config):
         username = force_str(entry[config["ldap_import_username_attr"]][0])
         lpart, domain = split_mailbox(username)
         if domain is None:
-            # Try to find associated email
-            email = None
-            for attr in ["mail", "userPrincipalName"]:
-                if attr in entry:
-                    email = force_str(entry[attr][0])
-                    break
+            email = next(
+                (
+                    force_str(entry[attr][0])
+                    for attr in ["mail", "userPrincipalName"]
+                    if attr in entry
+                ),
+                None,
+            )
             if email is None:
                 if grp == "SimpleUsers":
-                    print("Skipping {} because no email found".format(dn))
+                    print(f"Skipping {dn} because no email found")
                     continue
             else:
                 username = email
@@ -246,11 +241,7 @@ def build_ldap_uri(config, node=""):
     """ Building LDAP uris for dovecot conf """
     if node:
         node += "_"
-    return "{}://{}:{}".format(
-        "ldaps" if config["ldap_secured"] == "ssl" else "ldap",
-        config["ldap_{}server_address".format(node)],
-        config["ldap_{}server_port".format(node)]
-    )
+    return f'{"ldaps" if config["ldap_secured"] == "ssl" else "ldap"}://{config[f"ldap_{node}server_address"]}:{config[f"ldap_{node}server_port"]}'
 
 
 def update_dovecot_config_file(config):

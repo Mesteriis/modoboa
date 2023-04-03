@@ -78,20 +78,25 @@ try:
             the user. ldap_user.dn is the user's DN and
             ldap_user.attrs contains all of their LDAP attributes.
             """
-            group = "SimpleUsers"
             admin_groups = self.global_params["ldap_admin_groups"].split(";")
-            for grp in admin_groups:
-                if grp.strip() in ldap_user.group_names:
-                    group = "DomainAdmins"
-                    break
+            group = next(
+                (
+                    "DomainAdmins"
+                    for grp in admin_groups
+                    if grp.strip() in ldap_user.group_names
+                ),
+                "SimpleUsers",
+            )
             lpart, domain = split_mailbox(username)
             if domain is None:
-                # Try to find associated email
-                email = None
-                for attr in ['mail', 'userPrincipalName']:
-                    if attr in ldap_user.attrs:
-                        email = ldap_user.attrs[attr][0]
-                        break
+                email = next(
+                    (
+                        ldap_user.attrs[attr][0]
+                        for attr in ['mail', 'userPrincipalName']
+                        if attr in ldap_user.attrs
+                    ),
+                    None,
+                )
                 if email is None:
                     if group == "SimpleUsers":
                         # Only DomainAdmins can have a username which
@@ -128,7 +133,7 @@ try:
         @classmethod
         def setting_fullname(cls, setting):
             """Return fullname for given setting."""
-            return "{}{}".format(cls.settings_prefix, setting)
+            return f"{cls.settings_prefix}{setting}"
 
 
     class LDAPBackend(LDAPBackendBase):

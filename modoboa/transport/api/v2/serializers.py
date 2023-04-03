@@ -34,9 +34,6 @@ class TransportSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         self.backend = backends.manager.get_backend(data["service"])
-        errors = {}
-        for field, error in self.backend.clean_fields(data["_settings"]):
-            errors[field] = error
-        if errors:
+        if errors := dict(self.backend.clean_fields(data["_settings"])):
             raise serializers.ValidationError(errors)
         return data
